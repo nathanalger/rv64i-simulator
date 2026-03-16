@@ -5,7 +5,7 @@
             "name": "Run RV64I Simulator",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/dist/sim.exe",
+            "program": "${workspaceFolder}/dist/rv64i.exe",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
