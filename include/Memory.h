@@ -5,54 +5,55 @@
 /**
  * Simulates memory module and controllers. Protects the memory from the simulator by utilizing getter-setter architecture.
  */
-class Memory {
-   private:
-      // Memory is protected from processor
-      std::vector<uint8_t> memory;
-   
-   public:
-      // Byte-Addressable Access
+class Memory
+{
+private:
+   // Memory is protected from processor
+   std::vector<uint8_t> memory;
 
-      /**
-       * Writes a byte (8 bits) of data into the specified address.
-       * Addresses are byte addressable.
-       */
-      uint8_t writeByte(uint64_t address, uint8_t value);
-      
-      /**
-       * Reads the byte (8 bits) of data from the specified address.
-       * Addresses are byte addressable.
-       */
-      uint8_t readByte(uint64_t address);
+public:
+   // Byte-Addressable Access
 
-      // Word-Addressable Access
+   /**
+    * Writes a byte (8 bits) of data into the specified address.
+    * Addresses are byte addressable.
+    */
+   uint8_t writeByte(uint64_t address, uint8_t value);
 
-      /**
-       * Writes a word (32 bits) of data into the specified address.
-       * Addresses are byte addressable.
-       */
-      uint32_t writeWord(uint64_t address, uint32_t value);
+   /**
+    * Reads the byte (8 bits) of data from the specified address.
+    * Addresses are byte addressable.
+    */
+   uint8_t readByte(uint64_t address);
 
-      /**
-       * Reads the word (32 bits) of data from the specified address.
-       * Addresses are byte addressable.
-       */
-      uint32_t readWord(uint64_t address);
+   // Word-Addressable Access
 
-      // Double-Addressable Access
+   /**
+    * Writes a word (32 bits) of data into the specified address.
+    * Addresses are byte addressable.
+    */
+   uint32_t writeWord(uint64_t address, uint32_t value);
 
-      /**
-       * Writes a double-word (64 bits) of data into the specified address.
-       * Addresses are byte addressable.
-       */
-      uint64_t writeDouble(uint64_t address, uint64_t value);
+   /**
+    * Reads the word (32 bits) of data from the specified address.
+    * Addresses are byte addressable.
+    */
+   uint32_t readWord(uint64_t address);
 
-      /**
-       * Reads the double-word (64 bits) of data from the specified address.
-       * Addresses are byte addressable.
-       */
-      uint64_t readDouble(uint64_t address);
+   // Double-Addressable Access
 
-      // Initializer
-      Memory(size_t size);
+   /**
+    * Writes a double-word (64 bits) of data into the specified address.
+    * Addresses are byte addressable.
+    */
+   uint64_t writeDouble(uint64_t address, uint64_t value);
+
+   /**
+    * Reads the double-word (64 bits) of data from the specified address.
+    * Addresses are byte addressable.
+    */
+   uint64_t readDouble(uint64_t address);
+
+   // Initializer
+   Memory(size_t size);
 };
