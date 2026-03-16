@@ -1,0 +1,18 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build",
+            "type": "shell",
+            "command": "cmd",
+            "args": [
+                "/c",
+                "if not exist dist mkdir dist && g++ -Wall -Wextra -std=c++17 src\\*.cpp -o dist\\sim.exe"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        }
+    ]
+}
