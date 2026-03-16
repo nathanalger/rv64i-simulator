@@ -7,7 +7,7 @@
             "command": "cmd",
             "args": [
                 "/c",
-                "if not exist dist mkdir dist && g++ -Wall -Wextra -std=c++17 src\\main.cpp -o dist\\rv64i.exe"
+                "g++ -Wall -Wextra -std=c++17 src\\main.cpp -o dist\\rv64i.exe & echo done!"
             ],
             "problemMatcher": [],
             "group": {
