@@ -1,7 +1,8 @@
 #pragma once
 #include <cstdint>
-#include "Processor.h"
 #include "InstructionType.h"
+
+class Processor;
 
 struct DecodedInstruction
 {
@@ -30,16 +31,6 @@ private:
 
    InstructionType interpret(uint32_t instruction);
    DecodedInstruction decode(uint32_t raw, Processor &processor);
-
-   // Helper Functions
-
-   InstructionFormat get_format(int32_t opcode);
-   int32_t sign_extend(int32_t, int);
-   int32_t decode_i(uint32_t raw);
-   int32_t decode_s(uint32_t raw);
-   int32_t decode_b(uint32_t raw);
-   int32_t decode_u(uint32_t raw);
-   int32_t decode_j(uint32_t raw);
 
 public:
    void handle(uint32_t raw, Processor &processor);

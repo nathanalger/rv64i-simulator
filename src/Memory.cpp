@@ -12,6 +12,7 @@ uint8_t Memory::readByte(uint64_t address)
 uint8_t Memory::writeByte(uint64_t address, uint8_t value)
 {
    memory[address] = value;
+   return value;
 }
 
 uint32_t Memory::writeWord(uint64_t address, uint32_t value)

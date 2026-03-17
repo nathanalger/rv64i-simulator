@@ -1,6 +1,15 @@
 #include "Interpreter.h"
 #include "InstructionType.h"
+#include "Processor.h"
 #include "InstructionExecutors.h"
+
+static InstructionFormat get_format(uint32_t opcode);
+static int32_t sign_extend(int32_t value, int bits);
+static int32_t decode_i(uint32_t raw);
+static int32_t decode_s(uint32_t raw);
+static int32_t decode_b(uint32_t raw);
+static int32_t decode_u(uint32_t raw);
+static int32_t decode_j(uint32_t raw);
 
 /**
  * Note that this corresponds to the order of the InstructionType enumerator.

@@ -7,7 +7,7 @@
             "command": "cmd",
             "args": [
                 "/c",
-                "g++ -Wall -Wextra -std=c++17 src\\main.cpp -o dist\\rv64i.exe & echo done!"
+                "g++ -Wall -Wextra -std=c++17 -Iinclude src\\*.cpp src\\instructions\\*.cpp -o dist\\rv64i.exe & echo done!"
             ],
             "problemMatcher": [],
             "group": {

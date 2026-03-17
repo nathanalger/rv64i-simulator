@@ -11,12 +11,6 @@ Processor::Processor(size_t size) : memory(size)
    initialize(size);
 }
 
-void Processor::initialize(size_t size)
-{
-   memory_size = size;
-   reset();
-}
-
 void Processor::reset()
 {
    // Set all registers to a low state
@@ -40,7 +34,7 @@ void Processor::initialize(size_t size)
    // Reset program counter
    program_counter = 0;
 
-   memory = Memory::Memory(size);
+   memory = Memory(size);
 };
 
 /**
