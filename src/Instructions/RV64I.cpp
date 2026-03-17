@@ -1,4 +1,6 @@
 #include "InstructionExecutors.h"
+#include "Debug.h"
+#include <string>
 
 void exec_add(const DecodedInstruction &inst, Processor &processor)
 {
@@ -9,6 +11,8 @@ void exec_add(const DecodedInstruction &inst, Processor &processor)
        processor.registers[inst.rs2];
 
    processor.program_counter += 4;
+
+   DEBUG_LOG("ADD x" + std::to_string(inst.rd) + ", x" + std::to_string(inst.rs1) + ", x" + std::to_string(inst.rs2) + " -> " + std::to_string(processor.registers[inst.rs1]) + " + " + std::to_string(processor.registers[inst.rs2]));
 }
 
 void exec_sub(const DecodedInstruction &inst, Processor &processor)
@@ -30,6 +34,8 @@ void exec_addi(const DecodedInstruction &inst, Processor &processor)
        processor.registers[inst.rs1] + inst.imm;
 
    processor.program_counter += 4;
+
+   DEBUG_LOG("ADDI x" + std::to_string(inst.rd) + ", x" + std::to_string(inst.rs1) + ", " + std::to_string(inst.imm) + " -> " + std::to_string(processor.registers[inst.rs1]) + " + " + std::to_string(inst.imm));
 }
 
 void exec_lw(const DecodedInstruction &inst, Processor &processor)
@@ -58,7 +64,7 @@ void exec_beq(const DecodedInstruction &inst, Processor &processor)
 {
    // beq rs1,rs2,offset
    // Branch if rs1 and rs2 are equal to location offset
-   if (inst.rs1 == inst.rs2)
+   if (processor.registers[inst.rs1] == processor.registers[inst.rs2])
    {
       processor.program_counter += inst.pc + inst.imm;
    }

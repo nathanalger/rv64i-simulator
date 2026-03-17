@@ -45,9 +45,6 @@ void Processor::step()
    // Fetch instruction
    uint32_t instruction = memory.readWord(program_counter);
 
-   // Advance program counter by one instruction
-   program_counter += 4;
-
    // Send instruction to interpreter
    interpreter.handle(instruction, *this);
 

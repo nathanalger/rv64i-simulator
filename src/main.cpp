@@ -1,8 +1,11 @@
 #include "Processor.h"
 #include <iostream>
+#include "Debug.h"
 
 int main()
 {
+   Debug::enable();
+
    // Create a central processor with 1GB of RAM.
    Processor cpu(1024 * 1024 * 1024);
 
