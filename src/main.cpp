@@ -1,6 +1,5 @@
 #include "Processor.h"
 #include <iostream>
-#include <string>
 #include "Debug.h"
 
 int main()
@@ -24,7 +23,8 @@ int main()
    cpu.step();
    cpu.step();
 
-   std::cout << "Value: " << std::to_string(cpu.registers[3]) << std::endl; // should be 15
+   if (cpu.registers[3] == 15)
+      std::cout << "15" << std::endl;
 
    return 0;
 }
