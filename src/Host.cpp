@@ -2,39 +2,86 @@
 #include "Debug.h"
 #include "IODevice.h"
 #include "ConsoleIO.h"
+#include "InjectionLoader.h"
 
-/**
- * This is an entrypoint for the simulator that is intended to be used on an operating system.
- * It relies on standard IO provided by the OS.
- */
-int main()
+int main(int argc, char *argv[])
 {
-   // Select debug mode
-   Debug::enable();
+   size_t memory_kb = 1024;
+   bool debug_enabled = false;
 
-   // Select IO device (currently OS console)
+   // Setup IO
    io = new ConsoleIO();
 
-   // Create a central processor with 1MB of RAM.
-   Memory mem(1024 * 1024);
+   // CLI check
+   if (argc < 2)
+   {
+      io->writeString("Usage: rv64i <binary_file> [--memory kb] [--debug]\n");
+      return 1;
+   }
+
+   const char *filename = argv[1];
+
+   for (int i = 2; i < argc; i++)
+   {
+      std::string arg = argv[i];
+
+      if (arg == "--debug")
+      {
+         debug_enabled = true;
+      }
+      else if (arg == "--memory")
+      {
+         if (i + 1 >= argc)
+         {
+            io->writeString("Error: --memory requires a value\n");
+            return 1;
+         }
+
+         memory_kb = std::stoul(argv[i + 1]);
+         i++; // skip next argument
+      }
+      else
+      {
+         io->writeString("Unknown argument: ");
+         io->writeString(arg.c_str());
+         io->writeString("\n");
+         return 1;
+      }
+   }
+
+   if (debug_enabled)
+   {
+      Debug::enable();
+   }
+
+   // Setup memory + CPU
+   Memory mem(memory_kb * 1024);
    DEBUG_LOG("Memory Initialized Successfully");
 
    Processor cpu(mem);
    DEBUG_LOG("Processor Initialized Successfully");
 
-   cpu.memory.writeWord(0, 0x00500093); // addi x1, x0, 5
-   cpu.memory.writeWord(4, 0x00a00113); // addi x2, x0, 10
-   cpu.memory.writeWord(8, 0x002081b3); // add x3, x1, x2
+   // Load program
+   InjectionLoader loader(filename);
+
+   if (!loader.load(mem))
+   {
+      io->writeString("Failed to load file.\n");
+      return 1;
+   }
 
    cpu.program_counter = 0;
 
-   cpu.step();
-   cpu.step();
-   cpu.step();
+   for (int i = 0; i < 100; i++) // prevent infinite loop for now
+   {
+      cpu.step();
+   }
 
+   // Debug output
    if (Debug::enabled())
    {
       DEBUG_LOG("Final register values after execution:");
+
       for (int i = 0; i < 32; i++)
       {
          DEBUG_BEGIN()
