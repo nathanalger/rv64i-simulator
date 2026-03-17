@@ -1,6 +1,8 @@
 #include "Interpreter.h"
+#include "InstructionType.h"
+#include "InstructionExecutors.h"
 
-Instruction Interpreter::interpret(uint32_t instruction)
+InstructionType Interpreter::interpret(uint32_t instruction)
 {
 
    uint32_t opcode = instruction & 0x7F;
@@ -12,47 +14,45 @@ Instruction Interpreter::interpret(uint32_t instruction)
 
    case 0x33: // R-Type
       if (funct3 == 0 && funct7 == 0x00)
-         return ADD;
+         return InstructionType::ADD;
 
       if (funct3 == 0 && funct7 == 0x20)
-         return SUB;
+         return InstructionType::SUB;
 
       break;
 
    case 0x13: // I-Type arithmetic
       if (funct3 == 0)
-         return ADDI;
+         return InstructionType::ADDI;
       break;
 
    case 0x03: // Loads
       if (funct3 == 2)
-         return LW;
+         return InstructionType::LW;
       break;
 
    case 0x23: // Stores
       if (funct3 == 2)
-         return SW;
+         return InstructionType::SW;
       break;
 
    case 0x63: // Branch
       if (funct3 == 0)
-         return BEQ;
+         return InstructionType::BEQ;
       break;
 
    case 0x6F:
-      return JAL;
+      return InstructionType::JAL;
    }
 
-   return UNKNOWN;
-}
-
-void Interpreter::execute(const DecodedInstruction &Instruction, Processor &processor)
-{
+   return InstructionType::UNKNOWN;
 }
 
 DecodedInstruction Interpreter::decode(uint32_t raw, Processor &processor)
 {
    DecodedInstruction inst;
+
+   inst.type = interpret(raw);
 
    inst.opcode = raw & 0x7F;
    inst.rd = (raw >> 7) & 0x1F;
@@ -64,9 +64,33 @@ DecodedInstruction Interpreter::decode(uint32_t raw, Processor &processor)
    inst.pc = processor.program_counter;
 
    inst.imm = (int32_t)raw >> 20;
+
+   return inst;
 }
+
+/**
+ * Note that this corresponds to the order of the InstructionType enumerator.
+ * This dispatches the proper function based on the raw instruction type.
+ */
+Interpreter::ExecFunc Interpreter::dispatch[] =
+    {
+        exec_add,
+        exec_sub,
+        exec_addi,
+        exec_lw,
+        exec_sw,
+        exec_beq,
+        exec_jal,
+        nullptr};
 
 void Interpreter::handle(uint32_t raw, Processor &processor)
 {
-   execute(decode(raw, processor), processor);
+   DecodedInstruction inst = decode(raw, processor);
+
+   ExecFunc func = dispatch[static_cast<int>(inst.type)];
+
+   if (func)
+      func(inst, processor);
+
+   processor.registers[0] = 0;
 }

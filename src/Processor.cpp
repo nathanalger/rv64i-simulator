@@ -8,6 +8,11 @@ Processor::Processor() : memory(1024 * 1024)
 
 Processor::Processor(size_t size) : memory(size)
 {
+   initialize(size);
+}
+
+void Processor::initialize(size_t size)
+{
    memory_size = size;
    reset();
 }
