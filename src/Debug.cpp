@@ -1,4 +1,5 @@
 #include "Debug.h"
+#include "IODevice.h"
 
 bool Debug::debug = false;
 
@@ -23,8 +24,32 @@ bool Debug::set(bool enabled)
    return enabled;
 }
 
-void Debug::log(const std::string &caller, const std::string &message)
+void Debug::log(const char *caller, const char *message)
 {
-   if (debug)
-      std::cout << "[" << caller << "] " << message << std::endl;
+   if (!debug || !io)
+      return;
+
+   io->writeChar('[');
+   io->writeString(caller);
+   io->writeString("] ");
+   io->writeString(message);
+   io->writeChar('\n');
+}
+
+void Debug::begin(const char *caller)
+{
+   if (!debug || !io)
+      return;
+
+   io->writeChar('[');
+   io->writeString(caller);
+   io->writeString("] ");
+}
+
+void Debug::end()
+{
+   if (!debug || !io)
+      return;
+
+   io->writeChar('\n');
 }

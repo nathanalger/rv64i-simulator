@@ -1,6 +1,6 @@
 #include "InstructionExecutors.h"
 #include "Debug.h"
-#include <string>
+#include "IODevice.h"
 
 void exec_add(const DecodedInstruction &inst, Processor &processor)
 {
@@ -12,7 +12,14 @@ void exec_add(const DecodedInstruction &inst, Processor &processor)
 
    processor.program_counter += 4;
 
-   DEBUG_LOG("ADD x" + std::to_string(inst.rd) + ", x" + std::to_string(inst.rs1) + ", x" + std::to_string(inst.rs2) + " -> " + std::to_string(processor.registers[inst.rs1]) + " + " + std::to_string(processor.registers[inst.rs2]));
+   DEBUG_BEGIN()
+   io->writeString("ADD x");
+   io->writeInt(inst.rd);
+   io->writeString(", x");
+   io->writeInt(inst.rs1);
+   io->writeString(", x");
+   io->writeInt(inst.rs2);
+   DEBUG_END()
 }
 
 void exec_sub(const DecodedInstruction &inst, Processor &processor)
@@ -35,7 +42,14 @@ void exec_addi(const DecodedInstruction &inst, Processor &processor)
 
    processor.program_counter += 4;
 
-   DEBUG_LOG("ADDI x" + std::to_string(inst.rd) + ", x" + std::to_string(inst.rs1) + ", " + std::to_string(inst.imm) + " -> " + std::to_string(processor.registers[inst.rs1]) + " + " + std::to_string(inst.imm));
+   DEBUG_BEGIN()
+   io->writeString("ADDI x");
+   io->writeInt(inst.rd);
+   io->writeString(", x");
+   io->writeInt(inst.rs1);
+   io->writeString(", ");
+   io->writeInt(inst.imm);
+   DEBUG_END()
 }
 
 void exec_lw(const DecodedInstruction &inst, Processor &processor)

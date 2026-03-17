@@ -1,10 +1,15 @@
 #include "Processor.h"
-#include <iostream>
 #include "Debug.h"
+#include "IODevice.h"
+#include "ConsoleIO.h"
 
 int main()
 {
+   // Select debug mode
    Debug::enable();
+
+   // Select IO device (currently OS console)
+   io = new ConsoleIO();
 
    // Create a central processor with 1GB of RAM.
    Memory mem(1024 * 1024);
@@ -23,8 +28,11 @@ int main()
    cpu.step();
    cpu.step();
 
-   if (cpu.registers[3] == 15)
-      std::cout << "15" << std::endl;
+   DEBUG_BEGIN()
+   io->writeString("Register x3 value: ");
+   io->writeInt(cpu.registers[3]);
+   io->writeChar('\n');
+   DEBUG_END()
 
    return 0;
 }
