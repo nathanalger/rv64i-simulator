@@ -1,7 +1,6 @@
 #include "Processor.h"
 #include "Debug.h"
 #include "IODevice.h"
-#include "ConsoleIO.h"
 
 /**
  * This is an entrypoint for the simulator that is intended to be used on an operating system.

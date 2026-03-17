@@ -7,7 +7,7 @@
             "command": "cmd",
             "args": [
                 "/c",
-                "g++ -Wall -Wextra -std=c++20 -Iinclude src\\Host.cpp src\\core\\*.cpp src\\loaders\\*.cpp src\\instructions\\*.cpp -o dist\\rv64i-host.exe && g++ -Wall -Wextra -std=c++20 -Iinclude src\\Core.cpp src\\core\\*.cpp src\\instructions\\*.cpp -o dist\\rv64i-core.exe"
+                "g++ -Wall -Wextra -std=c++20 -Iinclude/core -Iinclude/host src\\Host.cpp src\\core\\*.cpp src\\host\\*.cpp src\\instructions\\*.cpp -o dist\\rv64i-host.exe && g++ -Wall -Wextra -std=c++20 -Iinclude/core src\\Core.cpp src\\core\\*.cpp src\\instructions\\*.cpp -o dist\\rv64i-core.exe"
             ],
             "problemMatcher": [],
             "group": {

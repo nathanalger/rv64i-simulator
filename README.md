@@ -74,8 +74,20 @@ This explains:
 
 ## Build
 
-Typical build (example using `g++`):
+The build command can be found in `.vscode/tasks.json`. You will find that a build produces two different binaries.
 
-```bash
-g++ -Wall -Wextra -std=c++17 src/main.cpp -o dist/rv64i
-```
+### RV64I Core
+
+RV64I Core is the binaries that are intended to run entirely independent of standard libraries. This will become important when executing the binaries with no operating system.
+
+### RV64I Host
+
+RV64I Host additionally includes binaries that make it executable on a machine with an operating system. It provides some standard libraries, mostly for IO. 
+
+### Separation of files
+
+For any files that require IO provided by the OS will be stored separately. 
+
+**Header files** are separated into folders by name. In `include/core` are header files that are integral and are included in both Core and Host. 
+
+**Code files** are a bit different. When compiling core, it will include `src/Core` as well as `src/Instructions`. When compiling host, it will additionally include `src/Host`.

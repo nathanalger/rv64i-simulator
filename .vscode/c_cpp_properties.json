@@ -3,7 +3,8 @@
         {
             "name": "Win32",
             "includePath": [
-                "${workspaceFolder}/include",
+                "${workspaceFolder}/include/core",
+                "${workspaceFolder}/include/host",
                 "${workspaceFolder}/src"
             ],
             "defines": [
