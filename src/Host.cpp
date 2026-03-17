@@ -3,6 +3,10 @@
 #include "IODevice.h"
 #include "ConsoleIO.h"
 
+/**
+ * This is an entrypoint for the simulator that is intended to be used on an operating system.
+ * It relies on standard IO provided by the OS.
+ */
 int main()
 {
    // Select debug mode
@@ -11,7 +15,7 @@ int main()
    // Select IO device (currently OS console)
    io = new ConsoleIO();
 
-   // Create a central processor with 1GB of RAM.
+   // Create a central processor with 1MB of RAM.
    Memory mem(1024 * 1024);
    DEBUG_LOG("Memory Initialized Successfully");
 
@@ -28,11 +32,19 @@ int main()
    cpu.step();
    cpu.step();
 
-   DEBUG_BEGIN()
-   io->writeString("Register x3 value: ");
-   io->writeInt(cpu.registers[3]);
-   io->writeChar('\n');
-   DEBUG_END()
+   if (Debug::enabled())
+   {
+      DEBUG_LOG("Final register values after execution:");
+      for (int i = 0; i < 32; i++)
+      {
+         DEBUG_BEGIN()
+         io->writeString("x");
+         io->writeInt(i);
+         io->writeString(" - ");
+         io->writeInt(cpu.registers[i]);
+         DEBUG_END()
+      }
+   }
 
    return 0;
 }
