@@ -14,6 +14,17 @@ uint8_t Memory::writeByte(uint64_t address, uint8_t value)
    memory[address] = value;
 }
 
+uint32_t Memory::writeWord(uint64_t address, uint32_t value)
+{
+
+   memory[address + 0] = value & 0xFF;
+   memory[address + 1] = (value >> 8) & 0xFF;
+   memory[address + 2] = (value >> 16) & 0xFF;
+   memory[address + 3] = (value >> 24) & 0xFF;
+
+   return value;
+}
+
 uint32_t Memory::readWord(uint64_t address)
 {
    return (uint32_t)memory[address + 0] |

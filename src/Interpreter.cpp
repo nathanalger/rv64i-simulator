@@ -2,6 +2,21 @@
 #include "InstructionType.h"
 #include "InstructionExecutors.h"
 
+/**
+ * Note that this corresponds to the order of the InstructionType enumerator.
+ * This dispatches the proper function based on the raw instruction type.
+ */
+Interpreter::ExecFunc Interpreter::dispatch[] =
+    {
+        exec_add,
+        exec_sub,
+        exec_addi,
+        exec_lw,
+        exec_sw,
+        exec_beq,
+        exec_jal,
+        nullptr};
+
 InstructionType Interpreter::interpret(uint32_t instruction)
 {
 
@@ -50,11 +65,11 @@ InstructionType Interpreter::interpret(uint32_t instruction)
 
 DecodedInstruction Interpreter::decode(uint32_t raw, Processor &processor)
 {
-   DecodedInstruction inst;
-
-   inst.type = interpret(raw);
+   DecodedInstruction inst{};
 
    inst.opcode = raw & 0x7F;
+   inst.type = interpret(raw);
+
    inst.rd = (raw >> 7) & 0x1F;
    inst.funct3 = (raw >> 12) & 0x7;
    inst.rs1 = (raw >> 15) & 0x1F;
@@ -63,25 +78,111 @@ DecodedInstruction Interpreter::decode(uint32_t raw, Processor &processor)
 
    inst.pc = processor.program_counter;
 
-   inst.imm = (int32_t)raw >> 20;
+   InstructionFormat format = get_format(inst.opcode);
+
+   switch (format)
+   {
+   case InstructionFormat::I:
+      inst.imm = decode_i(raw);
+      break;
+
+   case InstructionFormat::S:
+      inst.imm = decode_s(raw);
+      break;
+
+   case InstructionFormat::B:
+      inst.imm = decode_b(raw);
+      break;
+
+   case InstructionFormat::U:
+      inst.imm = decode_u(raw);
+      break;
+
+   case InstructionFormat::J:
+      inst.imm = decode_j(raw);
+      break;
+
+   default:
+      inst.imm = 0;
+   }
 
    return inst;
 }
 
-/**
- * Note that this corresponds to the order of the InstructionType enumerator.
- * This dispatches the proper function based on the raw instruction type.
- */
-Interpreter::ExecFunc Interpreter::dispatch[] =
-    {
-        exec_add,
-        exec_sub,
-        exec_addi,
-        exec_lw,
-        exec_sw,
-        exec_beq,
-        exec_jal,
-        nullptr};
+// Helper Functions
+
+static InstructionFormat get_format(uint32_t opcode)
+{
+   switch (opcode)
+   {
+   case 0x33:
+      return InstructionFormat::R;
+   case 0x13:
+      return InstructionFormat::I;
+   case 0x03:
+      return InstructionFormat::I;
+   case 0x23:
+      return InstructionFormat::S;
+   case 0x63:
+      return InstructionFormat::B;
+   case 0x37:
+      return InstructionFormat::U;
+   case 0x17:
+      return InstructionFormat::U;
+   case 0x6F:
+      return InstructionFormat::J;
+
+   default:
+      return InstructionFormat::R;
+   }
+}
+
+static int32_t sign_extend(int32_t value, int bits)
+{
+   int32_t shift = 32 - bits;
+   return (value << shift) >> shift;
+}
+
+static int32_t decode_i(uint32_t raw)
+{
+   return sign_extend(raw >> 20, 12);
+}
+
+static int32_t decode_s(uint32_t raw)
+{
+   int32_t imm =
+       ((raw >> 25) << 5) |
+       ((raw >> 7) & 0x1F);
+
+   return sign_extend(imm, 12);
+}
+
+static int32_t decode_b(uint32_t raw)
+{
+   int32_t imm =
+       ((raw >> 31) << 12) |
+       (((raw >> 7) & 1) << 11) |
+       (((raw >> 25) & 0x3F) << 5) |
+       (((raw >> 8) & 0xF) << 1);
+
+   return sign_extend(imm, 13);
+}
+
+static int32_t decode_u(uint32_t raw)
+{
+   return raw & 0xFFFFF000;
+}
+
+static int32_t decode_j(uint32_t raw)
+{
+   int32_t imm =
+       ((raw >> 31) << 20) |
+       (((raw >> 12) & 0xFF) << 12) |
+       (((raw >> 20) & 1) << 11) |
+       (((raw >> 21) & 0x3FF) << 1);
+
+   return sign_extend(imm, 21);
+}
 
 void Interpreter::handle(uint32_t raw, Processor &processor)
 {

@@ -9,3 +9,13 @@ enum class InstructionType
    JAL,
    UNKNOWN
 };
+
+enum class InstructionFormat
+{
+   R,
+   I,
+   S,
+   B,
+   U,
+   J
+};
