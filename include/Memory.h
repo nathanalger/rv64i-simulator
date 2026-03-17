@@ -9,7 +9,8 @@ class Memory
 {
 private:
    // Memory is protected from processor
-   std::vector<uint8_t> memory;
+   uint8_t *memory;
+   size_t size;
 
 public:
    // Byte-Addressable Access
@@ -56,4 +57,9 @@ public:
 
    // Initializer
    Memory(size_t size);
+   ~Memory();
+
+   // Disable copying
+   Memory(const Memory &) = delete;
+   Memory &operator=(const Memory &) = delete;
 };

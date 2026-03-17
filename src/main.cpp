@@ -1,5 +1,6 @@
 #include "Processor.h"
 #include <iostream>
+#include <string>
 #include "Debug.h"
 
 int main()
@@ -7,7 +8,11 @@ int main()
    Debug::enable();
 
    // Create a central processor with 1GB of RAM.
-   Processor cpu(1024 * 1024 * 1024);
+   Memory mem(1024 * 1024);
+   DEBUG_LOG("Memory Initialized Successfully");
+
+   Processor cpu(mem);
+   DEBUG_LOG("Processor Initialized Successfully");
 
    cpu.memory.writeWord(0, 0x00500093); // addi x1, x0, 5
    cpu.memory.writeWord(4, 0x00a00113); // addi x2, x0, 10
@@ -19,7 +24,7 @@ int main()
    cpu.step();
    cpu.step();
 
-   std::cout << cpu.registers[3] << std::endl; // should be 15
+   std::cout << "Value: " << std::to_string(cpu.registers[3]) << std::endl; // should be 15
 
    return 0;
 }

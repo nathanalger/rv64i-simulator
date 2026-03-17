@@ -1,14 +1,9 @@
 #include "Processor.h"
 #include "Memory.h"
 
-Processor::Processor() : memory(1024 * 1024)
+Processor::Processor(Memory &mem) : memory(mem)
 {
-   initialize(1024 * 1024);
-}
-
-Processor::Processor(size_t size) : memory(size)
-{
-   initialize(size);
+   initialize();
 }
 
 void Processor::reset()
@@ -23,7 +18,7 @@ void Processor::reset()
    program_counter = 0;
 };
 
-void Processor::initialize(size_t size)
+void Processor::initialize()
 {
    // Set all registers to a low state
    for (int i = 0; i < 32; i++)
@@ -33,8 +28,6 @@ void Processor::initialize(size_t size)
 
    // Reset program counter
    program_counter = 0;
-
-   memory = Memory(size);
 };
 
 /**

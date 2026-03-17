@@ -1,8 +1,16 @@
 #include "Memory.h"
 
-Memory::Memory(size_t size)
+// Initializer and destructor
+Memory::Memory(size_t size) : size(size)
 {
-   memory.resize(size);
+   memory = new uint8_t[size];
+
+   for (size_t i = 0; i < size; i++)
+      memory[i] = 0;
+}
+Memory::~Memory()
+{
+   delete[] memory;
 }
 
 uint8_t Memory::readByte(uint64_t address)
