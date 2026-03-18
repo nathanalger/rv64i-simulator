@@ -61,6 +61,19 @@ void exec_lw(const DecodedInstruction &inst, Processor &processor)
 
    processor.registers[inst.rd] = static_cast<int32_t>(value);
    processor.program_counter += 4;
+
+   DEBUG_BEGIN()
+   io->writeString("LW x");
+   io->writeInt(inst.rd);
+   io->writeString(", ");
+   io->writeInt(inst.imm);
+   io->writeString("(x");
+   io->writeInt(inst.rs1);
+   io->writeString(") -> addr: ");
+   io->writeInt(address);
+   io->writeString(" -> value: ");
+   io->writeInt(static_cast<int32_t>(value));
+   DEBUG_END()
 }
 
 void exec_sw(const DecodedInstruction &inst, Processor &processor)
@@ -72,6 +85,19 @@ void exec_sw(const DecodedInstruction &inst, Processor &processor)
 
    processor.memory.writeWord(address, value);
    processor.program_counter += 4;
+
+   DEBUG_BEGIN()
+   io->writeString("SW x");
+   io->writeInt(inst.rs2);
+   io->writeString(", ");
+   io->writeInt(inst.imm);
+   io->writeString("(x");
+   io->writeInt(inst.rs1);
+   io->writeString(") -> addr: ");
+   io->writeInt(address);
+   io->writeString(" <- value: ");
+   io->writeInt(static_cast<int32_t>(value));
+   DEBUG_END()
 }
 
 void exec_beq(const DecodedInstruction &inst, Processor &processor)
@@ -128,5 +154,19 @@ void exec_jal(const DecodedInstruction &inst, Processor &processor)
    io->writeString(" -> ");
    io->writeInt((int32_t)processor.program_counter);
    io->writeString(")");
+   DEBUG_END()
+}
+
+void exec_unknown(const DecodedInstruction &inst, Processor &processor)
+{
+   DEBUG_BEGIN()
+   io->writeString("Unknown instruction read at PC: ");
+   io->writeInt(processor.program_counter);
+   io->writeString(". Opcode: ");
+   io->writeInt(inst.opcode);
+   io->writeString(", funct3: ");
+   io->writeInt(inst.funct3);
+   io->writeString(", funct7: ");
+   io->writeInt(inst.funct7);
    DEBUG_END()
 }

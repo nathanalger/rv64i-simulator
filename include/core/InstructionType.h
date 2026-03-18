@@ -2,6 +2,7 @@
 
 enum class InstructionType
 {
+   // RV64I
    ADD,
    SUB,
    ADDI,
@@ -9,7 +10,15 @@ enum class InstructionType
    SW,
    BEQ,
    JAL,
-   UNKNOWN
+   UNKNOWN,
+
+   // Loads
+   LB,
+   LH,
+   LD,
+   LBU,
+   LHU,
+   LWU
 };
 
 enum class InstructionFormat

@@ -29,6 +29,18 @@ public:
    // Word-Addressable Access
 
    /**
+    * Writes a half-word (16 bits) of data into the specified address.
+    * Addresses are byte addressable.
+    */
+   uint16_t writeHalf(uint64_t address, uint16_t value);
+
+   /**
+    * Reads the half-word (16 bits) of data from the specified address.
+    * Addresses are byte addressable.
+    */
+   uint16_t readHalf(uint64_t address);
+
+   /**
     * Writes a word (32 bits) of data into the specified address.
     * Addresses are byte addressable.
     */

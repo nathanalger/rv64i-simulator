@@ -1,10 +1,6 @@
 # Import all instruction modules so they register themselves
+import pkgutil
+import importlib
 
-# Base RV64I Operations
-from . import add
-from . import sub
-from . import addi
-from . import lw
-from . import sw
-from . import beq
-from . import jal
+for _, module_name, _ in pkgutil.iter_modules(__path__):
+    importlib.import_module(f"{__name__}.{module_name}")

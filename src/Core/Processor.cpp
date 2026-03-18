@@ -97,8 +97,15 @@ bool Processor::step()
 void Processor::run()
 {
    bool success = true;
-   while (success)
+   while (success && program_counter < text_end)
    {
       success = step();
+   }
+   if (success == false && program_counter < text_end)
+   {
+      DEBUG_BEGIN()
+      io->writeString("ERROR OBSERVERD AT PC: ");
+      io->writeInt(program_counter);
+      DEBUG_END()
    }
 }

@@ -78,6 +78,8 @@ int main(int argc, char *argv[])
 
    cpu.run();
 
+   io->writeInt(text_end);
+
    // Debug output
    if (Debug::enabled())
    {

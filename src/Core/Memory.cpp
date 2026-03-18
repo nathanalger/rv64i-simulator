@@ -23,6 +23,23 @@ uint8_t Memory::writeByte(uint64_t address, uint8_t value)
    return value;
 }
 
+uint16_t Memory::writeHalf(uint64_t address, uint16_t value)
+{
+   memory[address] = value & 0xFF;
+   memory[address + 1] = (value >> 8) & 0xFF;
+
+   return value;
+}
+
+uint16_t Memory::readHalf(uint64_t address)
+{
+   uint16_t value = 0;
+   value |= memory[address];
+   value |= memory[address + 1] << 8;
+
+   return value;
+}
+
 uint32_t Memory::writeWord(uint64_t address, uint32_t value)
 {
 

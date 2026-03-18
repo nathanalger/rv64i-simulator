@@ -75,6 +75,35 @@ enum class InstructionType
 };
 ```
 
+Finally, add the instruction if necessary to the interpret function in Interpreter:
+
+```cpp
+InstructionType Interpreter::interpret(uint32_t instruction)
+{
+
+   uint32_t opcode = instruction & 0x7F;
+   uint32_t funct3 = (instruction >> 12) & 0x7;
+   uint32_t funct7 = (instruction >> 25) & 0x7F;
+
+   switch (opcode)
+   {
+
+   case 0x33: // R-Type
+      if (funct3 == 0 && funct7 == 0x00)
+         return InstructionType::ADD;
+
+      if (funct3 == 0 && funct7 == 0x20)
+         return InstructionType::SUB;
+
+      break;
+
+      // ...
+
+   return InstructionType::UNKNOWN;
+   }
+}
+```
+
 ## 5. Sign Extended Immediate
 
-If your function requires a sign extended immediate
+If your function requires a sign extended immediate, the interpreter file has a function to assist with this.

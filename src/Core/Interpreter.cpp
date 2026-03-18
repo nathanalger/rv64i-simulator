@@ -17,6 +17,7 @@ static int32_t decode_j(uint32_t raw);
  */
 Interpreter::ExecFunc Interpreter::dispatch[] =
     {
+        // RV64I
         exec_add,
         exec_sub,
         exec_addi,
@@ -24,7 +25,15 @@ Interpreter::ExecFunc Interpreter::dispatch[] =
         exec_sw,
         exec_beq,
         exec_jal,
-        nullptr};
+        exec_unknown,
+
+        // Loads
+        exec_lb,
+        exec_lh,
+        exec_ld,
+        exec_lbu,
+        exec_lhu,
+        exec_lwu};
 
 InstructionType Interpreter::interpret(uint32_t instruction)
 {
@@ -51,8 +60,23 @@ InstructionType Interpreter::interpret(uint32_t instruction)
       break;
 
    case 0x03: // Loads
-      if (funct3 == 2)
+      switch (funct3)
+      {
+      case 0b000:
+         return InstructionType::LB;
+      case 0b001:
+         return InstructionType::LH;
+      case 0b010:
          return InstructionType::LW;
+      case 0b011:
+         return InstructionType::LD;
+      case 0b100:
+         return InstructionType::LBU;
+      case 0b101:
+         return InstructionType::LHU;
+      case 0b110:
+         return InstructionType::LWU;
+      }
       break;
 
    case 0x23: // Stores
