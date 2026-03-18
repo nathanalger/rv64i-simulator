@@ -3,7 +3,7 @@
 #include "Debug.h"
 #include "IODevice.h"
 
-const uint64_t STACK_GUARD = 8; // or 64 for safety
+const uint64_t STACK_GUARD = 8;
 
 Processor::Processor(Memory &mem) : memory(mem)
 {
