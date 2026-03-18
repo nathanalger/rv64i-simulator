@@ -91,3 +91,11 @@ For any files that require IO provided by the OS will be stored separately.
 **Header files** are separated into folders by name. In `include/core` are header files that are integral and are included in both Core and Host. 
 
 **Code files** are a bit different. When compiling core, it will include `src/Core` as well as `src/Instructions`. When compiling host, it will additionally include `src/Host`.
+
+## Host Usage
+
+You can use the Host program in the command line like so:
+
+```bash
+./rv64i <binary_file> [--memory kb] [--debug]
+```
