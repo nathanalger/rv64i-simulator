@@ -4,6 +4,10 @@
 class ILoader
 {
 public:
-   virtual bool load(Memory &mem) = 0;
+   /**
+    * Returns the next free address after loading the
+    * program into memory. Returns 0 upon failure.
+    */
+   virtual uint64_t load(Memory &mem) = 0;
    virtual ~ILoader() = default;
 };

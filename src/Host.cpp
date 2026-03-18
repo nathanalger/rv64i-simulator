@@ -64,13 +64,17 @@ int main(int argc, char *argv[])
    // Load program
    InjectionLoader loader(filename);
 
-   if (!loader.load(mem))
+   uint64_t text_end = loader.load(mem);
+   if (text_end == 0)
    {
       io->writeString("Failed to load file.\n");
       return 1;
    }
 
+   cpu.text_end = text_end;
+
    cpu.program_counter = 0;
+   cpu.registers[2] = mem.getSize();
 
    for (int i = 0; i < 100; i++) // prevent infinite loop for now
    {

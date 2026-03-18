@@ -14,11 +14,7 @@ class InjectionLoader : public ILoader
 {
 public:
    InjectionLoader(const std::string &file) : filename(file) {}
-
-   /**
-    * Loads information byte-by-byte into memory starting at address 0.
-    */
-   bool load(Memory &mem) override;
+   uint64_t load(Memory &mem) override;
 
 private:
    std::string filename;

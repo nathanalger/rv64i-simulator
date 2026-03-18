@@ -14,7 +14,9 @@ public:
    uint64_t registers[32];
 
    // 64 bit width integer that stores current instruction address
-   int64_t program_counter;
+   uint64_t program_counter;
+
+   uint64_t text_end;
 
    Memory &memory;
    uint32_t memory_size;

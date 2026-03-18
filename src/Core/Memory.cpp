@@ -67,3 +67,8 @@ uint64_t Memory::readDouble(uint64_t address)
           ((uint64_t)memory[address + 6] << 48) |
           ((uint64_t)memory[address + 7] << 56);
 }
+
+uint64_t Memory::getSize()
+{
+   return size;
+}

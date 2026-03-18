@@ -3,6 +3,8 @@
 #include "Debug.h"
 #include "IODevice.h"
 
+const uint64_t STACK_GUARD = 8; // or 64 for safety
+
 Processor::Processor(Memory &mem) : memory(mem)
 {
    initialize();
@@ -37,21 +39,50 @@ void Processor::initialize()
  */
 bool Processor::step()
 {
+   // Store old pc for debugging
+   uint64_t old_pc = program_counter;
+
+   // Enforce text bounds
+   if (program_counter >= text_end)
+   {
+      io->writeString("ERROR: PC out of bounds\n");
+      return false;
+   }
+
    // Fetch instruction
    uint32_t instruction = memory.readWord(program_counter);
 
+   // Enforce stack size
+   if (registers[2] <= text_end + STACK_GUARD)
+   {
+      io->writeString("ERROR: Stack size exceeds lower bound!\n");
+      return false;
+   }
+
    // Send instruction to interpreter
-   bool success = interpreter.handle(instruction, *this);
+   if (!interpreter.handle(instruction, *this))
+   {
+      // Throw panic message
+      return false;
+   }
 
    // Enforce x0 = 0
    registers[0] = 0;
 
-   DEBUG_BEGIN()
-   io->writeString("PC: ");
-   io->writeInt(Processor::program_counter);
-   DEBUG_END()
+   // Enforce stack size
+   if (registers[2] <= text_end + STACK_GUARD)
+   {
+      io->writeString("ERROR: Stack size exceeds lower bound post execution!\n");
+      return false;
+   }
 
-   return success;
+   // Enforce PC advancement
+   if (program_counter == old_pc)
+   {
+      program_counter += 4;
+   }
+
+   return true;
 }
 
 /**

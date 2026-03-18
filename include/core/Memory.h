@@ -54,6 +54,8 @@ public:
     */
    uint64_t readDouble(uint64_t address);
 
+   uint64_t getSize();
+
    // Initializer
    Memory(size_t size);
    ~Memory();

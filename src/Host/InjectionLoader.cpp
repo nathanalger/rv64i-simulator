@@ -4,12 +4,12 @@
 #include <fstream>
 #include <cstdint>
 
-bool InjectionLoader::load(Memory &mem)
+uint64_t InjectionLoader::load(Memory &mem)
 {
    std::ifstream file(filename, std::ios::binary);
 
    if (!file)
-      return false;
+      return 0;
 
    uint64_t address = 0;
 
@@ -26,5 +26,5 @@ bool InjectionLoader::load(Memory &mem)
    io->writeString(" bytes into memory.");
    DEBUG_END()
 
-   return true;
+   return address;
 }
