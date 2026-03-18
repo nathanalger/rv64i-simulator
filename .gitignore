@@ -1,2 +1,5 @@
 dist/*
+dist/test.bin
 !dist/.gitkeep
+assemble/__pycache__
+assemble/instructions/__pycache__

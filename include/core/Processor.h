@@ -14,7 +14,7 @@ public:
    uint64_t registers[32];
 
    // 64 bit width integer that stores current instruction address
-   uint64_t program_counter;
+   int64_t program_counter;
 
    Memory &memory;
    uint32_t memory_size;
@@ -35,7 +35,7 @@ public:
    /**
     * Execute the next step in the program execution.
     */
-   void step();
+   bool step();
 
    /**
     * Trigger the processor to run the entire provided program.

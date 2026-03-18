@@ -193,7 +193,7 @@ static int32_t decode_j(uint32_t raw)
    return sign_extend(imm, 21);
 }
 
-void Interpreter::handle(uint32_t raw, Processor &processor)
+bool Interpreter::handle(uint32_t raw, Processor &processor)
 {
    DecodedInstruction inst = decode(raw, processor);
 
@@ -202,5 +202,11 @@ void Interpreter::handle(uint32_t raw, Processor &processor)
    if (func)
       func(inst, processor);
 
+   if (inst.type == InstructionType::UNKNOWN)
+   {
+      return false;
+   }
+
    processor.registers[0] = 0;
+   return true;
 }

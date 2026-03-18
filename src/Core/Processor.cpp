@@ -1,5 +1,7 @@
 #include "Processor.h"
 #include "Memory.h"
+#include "Debug.h"
+#include "IODevice.h"
 
 Processor::Processor(Memory &mem) : memory(mem)
 {
@@ -33,16 +35,23 @@ void Processor::initialize()
 /**
  * Execute a single instruction
  */
-void Processor::step()
+bool Processor::step()
 {
    // Fetch instruction
    uint32_t instruction = memory.readWord(program_counter);
 
    // Send instruction to interpreter
-   interpreter.handle(instruction, *this);
+   bool success = interpreter.handle(instruction, *this);
 
    // Enforce x0 = 0
    registers[0] = 0;
+
+   DEBUG_BEGIN()
+   io->writeString("PC: ");
+   io->writeInt(Processor::program_counter);
+   DEBUG_END()
+
+   return success;
 }
 
 /**
@@ -52,6 +61,8 @@ void Processor::run()
 {
    while (true)
    {
-      step();
+      bool success = step();
+      if (!success)
+         break;
    }
 }

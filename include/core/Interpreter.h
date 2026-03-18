@@ -19,7 +19,7 @@ struct DecodedInstruction
    int32_t imm;
 
    // Helpful for branch instructions
-   uint64_t pc;
+   int64_t pc;
 };
 
 class Interpreter
@@ -33,5 +33,5 @@ private:
    DecodedInstruction decode(uint32_t raw, Processor &processor);
 
 public:
-   void handle(uint32_t raw, Processor &processor);
+   bool handle(uint32_t raw, Processor &processor);
 };
