@@ -228,7 +228,7 @@ bool Interpreter::handle(uint32_t raw, Processor &processor)
 
    if (inst.type == InstructionType::UNKNOWN)
    {
-      return false;
+      processor.raiseTrap(TrapCause::ILLEGAL_INSTRUCTION, processor.program_counter);
    }
 
    processor.registers[0] = 0;

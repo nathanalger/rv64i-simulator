@@ -20,6 +20,7 @@ void Processor::reset()
 
    // Reset program counter
    program_counter = 0;
+   trap = false;
 };
 
 void Processor::initialize()
@@ -32,6 +33,7 @@ void Processor::initialize()
 
    // Reset program counter
    program_counter = 0;
+   trap = false;
 };
 
 /**
@@ -46,7 +48,7 @@ bool Processor::step()
    if (program_counter >= text_end)
    {
       io->writeString("ERROR: PC out of bounds\n");
-      return false;
+      raiseTrap(TrapCause::INSTRUCTION_ACCESS_FAULT, program_counter);
    }
 
    // Fetch instruction
@@ -56,36 +58,26 @@ bool Processor::step()
    if (registers[2] <= text_end + STACK_GUARD)
    {
       io->writeString("ERROR: Stack size exceeds lower bound!\n");
-      return false;
+      raiseTrap(TrapCause::STACK_SIZE_EXCEEDS_MAX, program_counter);
    }
 
    // Send instruction to interpreter
-   if (!interpreter.handle(instruction, *this))
-   {
-      // Throw panic message
-      return false;
-   }
+   interpreter.handle(instruction, *this);
 
    // Enforce x0 = 0
    registers[0] = 0;
 
-   // Enforce stack size
+   // Enforce stack size (again, i know)
    if (registers[2] <= text_end + STACK_GUARD)
    {
-      io->writeString("ERROR: Stack size exceeds lower bound post execution!\n");
-      return false;
+      io->writeString("ERROR: Stack size exceeds lower bound!\n");
+      raiseTrap(TrapCause::STACK_SIZE_EXCEEDS_MAX, program_counter);
    }
 
    // Detect bare-metal halt (infinite loop to itself)
    if (program_counter == old_pc)
    {
-      DEBUG_BEGIN()
-      io->writeString("Program halted normally (infinite loop detected at PC: ");
-      io->writeInt((int32_t)program_counter);
-      io->writeString(")\n");
-      DEBUG_END()
-
-      return false;
+      raiseTrap(TrapCause::NONE, program_counter);
    }
 
    return true;
@@ -96,16 +88,27 @@ bool Processor::step()
  */
 void Processor::run()
 {
-   bool success = true;
-   while (success && program_counter < text_end)
+   while (!trap && program_counter < text_end)
    {
-      success = step();
+      step();
    }
-   if (success == false && program_counter < text_end)
+
+   if (trap_cause != TrapCause::NONE)
    {
-      DEBUG_BEGIN()
-      io->writeString("ERROR OBSERVERD AT PC: ");
-      io->writeInt(program_counter);
-      DEBUG_END()
+      io->writeString("TRAP raised at PC: ");
+      io->writeInt(trap_pc);
+      io->writeString(". Cause: ");
+      io->writeString(trapCauseToString(trap_cause));
    }
+   else
+   {
+      io->writeString("Program exited with code 0.\n");
+   }
+}
+
+void Processor::raiseTrap(TrapCause cause, uint64_t pc)
+{
+   trap = true;
+   trap_cause = cause;
+   trap_pc = pc;
 }

@@ -1,6 +1,7 @@
 #pragma once
 #include "Interpreter.h"
 #include "Memory.h"
+#include "TrapCause.h"
 #include <cstdint>
 
 /**
@@ -20,6 +21,10 @@ public:
 
    Memory &memory;
    uint32_t memory_size;
+
+   bool trap;
+   TrapCause trap_cause;
+   uint64_t trap_pc;
 
    Interpreter interpreter;
 
@@ -43,6 +48,11 @@ public:
     * Trigger the processor to run the entire provided program.
     */
    void run();
+
+   /**
+    * Throw a trap with reason to the processor and halt execution.
+    */
+   void raiseTrap(TrapCause cause, uint64_t pc);
 
 private:
    /**
