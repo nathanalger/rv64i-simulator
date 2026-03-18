@@ -39,6 +39,9 @@ void Processor::initialize()
  */
 bool Processor::step()
 {
+   // Store old pc to detect infinite-loop halts
+   uint64_t old_pc = program_counter;
+
    // Enforce text bounds
    if (program_counter >= text_end)
    {
@@ -73,6 +76,18 @@ bool Processor::step()
       return false;
    }
 
+   // Detect bare-metal halt (infinite loop to itself)
+   if (program_counter == old_pc)
+   {
+      DEBUG_BEGIN()
+      io->writeString("Program halted normally (infinite loop detected at PC: ");
+      io->writeInt((int32_t)program_counter);
+      io->writeString(")\n");
+      DEBUG_END()
+
+      return false;
+   }
+
    return true;
 }
 
@@ -81,10 +96,9 @@ bool Processor::step()
  */
 void Processor::run()
 {
-   while (true)
+   bool success = true;
+   while (success)
    {
-      bool success = step();
-      if (!success)
-         break;
+      success = step();
    }
 }

@@ -76,10 +76,7 @@ int main(int argc, char *argv[])
    cpu.program_counter = 0;
    cpu.registers[2] = mem.getSize();
 
-   for (int i = 0; i < 100; i++) // prevent infinite loop for now
-   {
-      cpu.step();
-   }
+   cpu.run();
 
    // Debug output
    if (Debug::enabled())
