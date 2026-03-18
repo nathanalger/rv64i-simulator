@@ -1,5 +1,16 @@
 #pragma once
 
+#define DEBUG_LOG(msg) Debug::log(__func__, msg)
+
+#define DEBUG_BEGIN()    \
+   if (Debug::enabled()) \
+   {                     \
+      Debug::begin(__func__);
+
+#define DEBUG_END() \
+   Debug::end();    \
+   }
+
 class Debug
 {
 public:
@@ -14,12 +25,3 @@ public:
 private:
    static bool debug;
 };
-
-#define DEBUG_LOG(msg) Debug::log(__func__, msg)
-#define DEBUG_BEGIN()    \
-   if (Debug::enabled()) \
-   {                     \
-      Debug::begin(__func__);
-#define DEBUG_END() \
-   Debug::end();    \
-   }

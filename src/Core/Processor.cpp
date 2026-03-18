@@ -39,9 +39,6 @@ void Processor::initialize()
  */
 bool Processor::step()
 {
-   // Store old pc for debugging
-   uint64_t old_pc = program_counter;
-
    // Enforce text bounds
    if (program_counter >= text_end)
    {
@@ -74,12 +71,6 @@ bool Processor::step()
    {
       io->writeString("ERROR: Stack size exceeds lower bound post execution!\n");
       return false;
-   }
-
-   // Enforce PC advancement
-   if (program_counter == old_pc)
-   {
-      program_counter += 4;
    }
 
    return true;
