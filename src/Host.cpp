@@ -3,6 +3,8 @@
 #include "IODevice.h"
 #include "ConsoleIO.h"
 #include "InjectionLoader.h"
+#include "InstructionRegistry.h"
+#include "DefaultRegistry.h"
 
 int main(int argc, char *argv[])
 {
@@ -53,6 +55,11 @@ int main(int argc, char *argv[])
    {
       Debug::enable();
    }
+
+   // Initialize the registry
+   InstructionRegistry::init();
+   register_rv64i();
+   register_loads();
 
    // Setup memory + CPU
    Memory mem(memory_kb * 1024);

@@ -1,6 +1,8 @@
 #include "Processor.h"
 #include "Debug.h"
 #include "IODevice.h"
+#include "DefaultRegistry.h"
+#include "InstructionRegistry.h"
 
 /**
  * This is an entrypoint for the simulator that is intended to be used on an operating system.
@@ -10,6 +12,11 @@ int main()
 {
    // Select IO device (no current IO device for baremetal implementation)
    io = nullptr;
+
+   // Initialize the registry
+   InstructionRegistry::init();
+   register_rv64i();
+   register_loads();
 
    // Create a central processor with 1MB of RAM.
    Memory mem(1024 * 1024);

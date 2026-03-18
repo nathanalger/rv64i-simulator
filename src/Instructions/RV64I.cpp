@@ -1,6 +1,9 @@
-#include "InstructionExecutors.h"
 #include "Debug.h"
 #include "IODevice.h"
+#include "Interpreter.h"
+#include "Processor.h"
+#include "InstructionRegistry.h"
+#include "DefaultRegistry.h"
 
 void exec_add(const DecodedInstruction &inst, Processor &processor)
 {
@@ -157,16 +160,20 @@ void exec_jal(const DecodedInstruction &inst, Processor &processor)
    DEBUG_END()
 }
 
-void exec_unknown(const DecodedInstruction &inst, Processor &processor)
+// Built in core extension
+void register_rv64i()
 {
-   DEBUG_BEGIN()
-   io->writeString("Unknown instruction read at PC: ");
-   io->writeInt(processor.program_counter);
-   io->writeString(". Opcode: ");
-   io->writeInt(inst.opcode);
-   io->writeString(", funct3: ");
-   io->writeInt(inst.funct3);
-   io->writeString(", funct7: ");
-   io->writeInt(inst.funct7);
-   DEBUG_END()
+   using IR = InstructionRegistry;
+
+   IR::register_inst((0x00 << 25) | (0 << 12) | 0x33, MaskType::R, exec_add);
+   IR::register_inst((0x20 << 25) | (0 << 12) | 0x33, MaskType::R, exec_sub);
+
+   IR::register_inst((0 << 12) | 0x13, MaskType::I, exec_addi);
+
+   IR::register_inst((0b010 << 12) | 0x03, MaskType::I, exec_lw);
+   IR::register_inst((0b010 << 12) | 0x23, MaskType::S, exec_sw);
+
+   IR::register_inst((0b000 << 12) | 0x63, MaskType::B, exec_beq);
+
+   IR::register_inst(0x6F, MaskType::OPCODE_ONLY, exec_jal);
 }

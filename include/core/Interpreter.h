@@ -24,14 +24,11 @@ struct DecodedInstruction
 
 class Interpreter
 {
-private:
+public:
    using ExecFunc = void (*)(const DecodedInstruction &, Processor &);
+   bool handle(uint32_t raw, Processor &processor);
 
-   static ExecFunc dispatch[];
-
+private:
    InstructionType interpret(uint32_t instruction);
    DecodedInstruction decode(uint32_t raw, Processor &processor);
-
-public:
-   bool handle(uint32_t raw, Processor &processor);
 };

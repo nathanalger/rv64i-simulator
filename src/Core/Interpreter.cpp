@@ -1,7 +1,9 @@
 #include "Interpreter.h"
 #include "InstructionType.h"
 #include "Processor.h"
-#include "InstructionExecutors.h"
+#include "InstructionRegistry.h"
+#include "Debug.h"
+#include "IODevice.h"
 
 static InstructionFormat get_format(uint32_t opcode);
 static int32_t sign_extend(int32_t value, int bits);
@@ -10,30 +12,6 @@ static int32_t decode_s(uint32_t raw);
 static int32_t decode_b(uint32_t raw);
 static int32_t decode_u(uint32_t raw);
 static int32_t decode_j(uint32_t raw);
-
-/**
- * Note that this corresponds to the order of the InstructionType enumerator.
- * This dispatches the proper function based on the raw instruction type.
- */
-Interpreter::ExecFunc Interpreter::dispatch[] =
-    {
-        // RV64I
-        exec_add,
-        exec_sub,
-        exec_addi,
-        exec_lw,
-        exec_sw,
-        exec_beq,
-        exec_jal,
-        exec_unknown,
-
-        // Loads
-        exec_lb,
-        exec_lh,
-        exec_ld,
-        exec_lbu,
-        exec_lhu,
-        exec_lwu};
 
 InstructionType Interpreter::interpret(uint32_t instruction)
 {
@@ -221,13 +199,29 @@ bool Interpreter::handle(uint32_t raw, Processor &processor)
 {
    DecodedInstruction inst = decode(raw, processor);
 
-   ExecFunc func = dispatch[static_cast<int>(inst.type)];
+   uint32_t key = InstructionRegistry::make_key(
+       inst.opcode,
+       inst.funct3,
+       inst.funct7);
+
+   ExecFunc func = InstructionRegistry::lookup(key);
 
    if (func)
-      func(inst, processor);
-
-   if (inst.type == InstructionType::UNKNOWN)
    {
+      func(inst, processor);
+   }
+   else
+   {
+      DEBUG_BEGIN()
+      io->writeString("Unknown instruction read at PC: ");
+      io->writeInt(processor.program_counter);
+      io->writeString(". Opcode: ");
+      io->writeInt(inst.opcode);
+      io->writeString(", funct3: ");
+      io->writeInt(inst.funct3);
+      io->writeString(", funct7: ");
+      io->writeInt(inst.funct7);
+      DEBUG_END()
       processor.raiseTrap(TrapCause::ILLEGAL_INSTRUCTION, processor.program_counter);
    }
 
