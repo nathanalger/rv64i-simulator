@@ -163,17 +163,15 @@ void exec_jal(const DecodedInstruction &inst, Processor &processor)
 // Built in core extension
 void register_rv64i()
 {
-   using IR = InstructionRegistry;
+   InstructionRegistry::register_r(0x33, 0b000, 0b0000000, exec_add);
+   InstructionRegistry::register_r(0x33, 0b000, 0b0100000, exec_sub);
 
-   IR::register_inst((0x00 << 25) | (0 << 12) | 0x33, MaskType::R, exec_add);
-   IR::register_inst((0x20 << 25) | (0 << 12) | 0x33, MaskType::R, exec_sub);
+   InstructionRegistry::register_i(0x13, 0b000, exec_addi);
 
-   IR::register_inst((0 << 12) | 0x13, MaskType::I, exec_addi);
+   InstructionRegistry::register_i(0x03, 0b010, exec_lw);
+   InstructionRegistry::register_s(0x23, 0b010, exec_sw);
 
-   IR::register_inst((0b010 << 12) | 0x03, MaskType::I, exec_lw);
-   IR::register_inst((0b010 << 12) | 0x23, MaskType::S, exec_sw);
+   InstructionRegistry::register_b(0x63, 0b000, exec_beq);
 
-   IR::register_inst((0b000 << 12) | 0x63, MaskType::B, exec_beq);
-
-   IR::register_inst(0x6F, MaskType::OPCODE_ONLY, exec_jal);
+   InstructionRegistry::register_opcode(0x6F, exec_jal);
 }

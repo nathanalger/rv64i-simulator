@@ -60,6 +60,7 @@ int main(int argc, char *argv[])
    InstructionRegistry::init();
    register_rv64i();
    register_loads();
+   register_stores();
 
    // Setup memory + CPU
    Memory mem(memory_kb * 1024);

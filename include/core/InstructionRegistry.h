@@ -21,6 +21,11 @@ public:
    static void register_inst(uint32_t key, MaskType type, ExecFunc func);
    static ExecFunc lookup(uint32_t raw);
    static uint32_t make_key(uint32_t opcode, uint32_t funct3, uint32_t funct7);
+   static void register_r(uint32_t opcode, uint32_t funct3, uint32_t funct7, ExecFunc func);
+   static void register_i(uint32_t opcode, uint32_t funct3, ExecFunc func);
+   static void register_s(uint32_t opcode, uint32_t funct3, ExecFunc func);
+   static void register_b(uint32_t opcode, uint32_t funct3, ExecFunc func);
+   static void register_opcode(uint32_t opcode, ExecFunc func);
 
 private:
    static void register_inst(uint32_t key, uint32_t mask, ExecFunc func);

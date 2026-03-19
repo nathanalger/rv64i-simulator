@@ -149,11 +149,10 @@ void register_loads()
 {
    using IR = InstructionRegistry;
 
-   // opcode = 0x03 (loads)
-   IR::register_inst((0b000 << 12) | 0x03, MaskType::I, exec_lb);
-   IR::register_inst((0b001 << 12) | 0x03, MaskType::I, exec_lh);
-   IR::register_inst((0b011 << 12) | 0x03, MaskType::I, exec_ld);
-   IR::register_inst((0b100 << 12) | 0x03, MaskType::I, exec_lbu);
-   IR::register_inst((0b101 << 12) | 0x03, MaskType::I, exec_lhu);
-   IR::register_inst((0b110 << 12) | 0x03, MaskType::I, exec_lwu);
+   IR::register_i(0x03, 0b000, exec_lb);
+   IR::register_i(0x03, 0b001, exec_lh);
+   IR::register_i(0x03, 0b011, exec_ld);
+   IR::register_i(0x03, 0b100, exec_lbu);
+   IR::register_i(0x03, 0b101, exec_lhu);
+   IR::register_i(0x03, 0b110, exec_lwu);
 }

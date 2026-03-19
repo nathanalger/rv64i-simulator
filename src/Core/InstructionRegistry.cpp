@@ -76,6 +76,40 @@ void InstructionRegistry::register_inst(uint32_t key, uint32_t mask, ExecFunc fu
    table[index].func = func;
 }
 
+void InstructionRegistry::register_r(uint32_t opcode, uint32_t funct3, uint32_t funct7, ExecFunc func)
+{
+   uint32_t key = make_key(opcode, funct3, funct7);
+   uint32_t mask = get_mask(MaskType::R);
+   register_inst(key, mask, func);
+}
+
+void InstructionRegistry::register_i(uint32_t opcode, uint32_t funct3, ExecFunc func)
+{
+   uint32_t key = opcode | (funct3 << 12);
+   uint32_t mask = get_mask(MaskType::I);
+   register_inst(key, mask, func);
+}
+
+void InstructionRegistry::register_s(uint32_t opcode, uint32_t funct3, ExecFunc func)
+{
+   uint32_t key = opcode | (funct3 << 12);
+   uint32_t mask = get_mask(MaskType::S);
+   register_inst(key, mask, func);
+}
+
+void InstructionRegistry::register_b(uint32_t opcode, uint32_t funct3, ExecFunc func)
+{
+   uint32_t key = opcode | (funct3 << 12);
+   uint32_t mask = get_mask(MaskType::B);
+   register_inst(key, mask, func);
+}
+
+void InstructionRegistry::register_opcode(uint32_t opcode, ExecFunc func)
+{
+   uint32_t mask = get_mask(MaskType::OPCODE_ONLY);
+   register_inst(opcode, mask, func);
+}
+
 InstructionRegistry::ExecFunc InstructionRegistry::lookup(uint32_t raw)
 {
    uint32_t index = raw & (TABLE_SIZE - 1);
