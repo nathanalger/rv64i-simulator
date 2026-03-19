@@ -76,12 +76,21 @@ def encode_b(imm, rs2, rs1, funct3, opcode):
 
 
 def encode_u(imm, rd, opcode):
+    """
+    Encode a U-type instruction (LUI, AUIPC)
+    imm  : 20-bit unsigned immediate (0..0xFFFFF)
+    rd   : destination register
+    opcode: 7-bit opcode
+    """
     validate_reg(rd)
-    return (
-        (imm & 0xFFFFF000) |
-        (rd << 7) |
-        opcode
-    )
+
+    # Range check for 20-bit immediate
+    if not (0 <= imm <= 0xFFFFF):
+        raise ValueError(f"U-type immediate {imm} out of range! Must be 0..0xFFFFF")
+
+    # Shift immediate to upper 20 bits (bits 31:12)
+    instruction = ((imm & 0xFFFFF) << 12) | (rd << 7) | opcode
+    return instruction
 
 
 def encode_j(imm, rd, opcode):

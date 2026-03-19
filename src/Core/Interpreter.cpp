@@ -128,10 +128,18 @@ static InstructionFormat get_format(uint32_t opcode)
    {
    case 0x33:
       return InstructionFormat::R;
+   case 0x3B:
+      return InstructionFormat::R;
+
    case 0x13:
+      return InstructionFormat::I;
+   case 0x1B:
       return InstructionFormat::I;
    case 0x03:
       return InstructionFormat::I;
+   case 0x67:
+      return InstructionFormat::I;
+
    case 0x23:
       return InstructionFormat::S;
    case 0x63:

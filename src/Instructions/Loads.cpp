@@ -145,6 +145,24 @@ void exec_lwu(const DecodedInstruction &inst, Processor &processor)
    DEBUG_END()
 }
 
+void exec_lui(const DecodedInstruction &inst, Processor &processor)
+{
+   // LUI rd, imm
+   // Load 20-bit immediate into upper 20 bits of rd, lower 12 bits = 0
+   processor.registers[inst.rd] = static_cast<int64_t>(inst.imm) << 12;
+
+   processor.program_counter += 4;
+
+   DEBUG_BEGIN()
+   io->writeString("LUI x");
+   io->writeInt(inst.rd);
+   io->writeString(", ");
+   io->writeSignedInt(inst.imm);
+   io->writeString(" -> value: ");
+   io->writeInt(processor.registers[inst.rd]);
+   DEBUG_END()
+}
+
 void DefaultRegistry::register_loads()
 {
    using IR = InstructionRegistry;
@@ -155,4 +173,5 @@ void DefaultRegistry::register_loads()
    IR::register_i(0x03, 0b100, exec_lbu);
    IR::register_i(0x03, 0b101, exec_lhu);
    IR::register_i(0x03, 0b110, exec_lwu);
+   IR::register_u(0x37, exec_lui);
 }

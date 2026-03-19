@@ -60,19 +60,16 @@ void InstructionRegistry::register_inst(uint32_t key, MaskType type, ExecFunc fu
 
 void InstructionRegistry::register_inst(uint32_t key, uint32_t mask, ExecFunc func)
 {
-   uint32_t index = key & (TABLE_SIZE - 1);
+   // Hash only using the 7-bit opcode, ensuring consistency with lookup
+   uint32_t index = (key & 0x7F) & (TABLE_SIZE - 1);
    uint32_t start_index = index;
 
    // Linear probing
    while (table[index].func != nullptr)
    {
-
       index = (index + 1) & (TABLE_SIZE - 1);
-
       if (index == start_index)
-      {
-         return;
-      }
+         return; // Table full
    }
 
    table[index].key = key;
@@ -108,6 +105,12 @@ void InstructionRegistry::register_b(uint32_t opcode, uint32_t funct3, ExecFunc 
    register_inst(key, mask, func);
 }
 
+void InstructionRegistry::register_u(uint32_t opcode, ExecFunc func)
+{
+   uint32_t mask = get_mask(MaskType::U);
+   register_inst(opcode, mask, func);
+}
+
 void InstructionRegistry::register_opcode(uint32_t opcode, ExecFunc func)
 {
    uint32_t mask = get_mask(MaskType::OPCODE_ONLY);
@@ -116,7 +119,8 @@ void InstructionRegistry::register_opcode(uint32_t opcode, ExecFunc func)
 
 InstructionRegistry::ExecFunc InstructionRegistry::lookup(uint32_t raw)
 {
-   uint32_t index = raw & (TABLE_SIZE - 1);
+   // Hash only using the 7-bit opcode
+   uint32_t index = (raw & 0x7F) & (TABLE_SIZE - 1);
    uint32_t start_index = index;
 
    while (table[index].func != nullptr)
@@ -127,7 +131,6 @@ InstructionRegistry::ExecFunc InstructionRegistry::lookup(uint32_t raw)
       }
 
       index = (index + 1) & (TABLE_SIZE - 1);
-
       if (index == start_index)
          break;
    }

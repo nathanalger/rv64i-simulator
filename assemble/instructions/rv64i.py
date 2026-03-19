@@ -84,7 +84,7 @@ def assemble_addi(parts, labels, current_address):
 
     rd = parse_reg(parts[1])
     rs1 = parse_reg(parts[2])
-    imm = int(parts[3])
+    imm = int(parts[3], 0)
 
     return encode_i(imm, rs1, 0b000, rd, 0b0010011)
 

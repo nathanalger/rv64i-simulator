@@ -25,6 +25,7 @@ public:
    static void register_i(uint32_t opcode, uint32_t funct3, ExecFunc func);
    static void register_s(uint32_t opcode, uint32_t funct3, ExecFunc func);
    static void register_b(uint32_t opcode, uint32_t funct3, ExecFunc func);
+   static void register_u(uint32_t opcode, ExecFunc func);
    static void register_opcode(uint32_t opcode, ExecFunc func);
 
 private:
