@@ -15,9 +15,6 @@ int main()
 
    // Initialize the registry
    InstructionRegistry::init();
-   register_rv64i();
-   register_loads();
-   register_stores();
 
    // Create a central processor with 1MB of RAM.
    Memory mem(1024 * 1024);

@@ -71,7 +71,7 @@ void exec_sd(const DecodedInstruction &inst, Processor &processor)
    DEBUG_END()
 }
 
-void register_stores()
+void DefaultRegistry::register_stores()
 {
    using IR = InstructionRegistry;
 

@@ -51,7 +51,7 @@ void exec_addi(const DecodedInstruction &inst, Processor &processor)
    io->writeString(", x");
    io->writeInt(inst.rs1);
    io->writeString(", ");
-   io->writeInt(inst.imm);
+   io->writeSignedInt(inst.imm);
    DEBUG_END()
 }
 
@@ -161,7 +161,7 @@ void exec_jal(const DecodedInstruction &inst, Processor &processor)
 }
 
 // Built in core extension
-void register_rv64i()
+void DefaultRegistry::register_rv64i()
 {
    InstructionRegistry::register_r(0x33, 0b000, 0b0000000, exec_add);
    InstructionRegistry::register_r(0x33, 0b000, 0b0100000, exec_sub);

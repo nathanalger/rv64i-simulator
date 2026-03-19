@@ -1,5 +1,11 @@
 #pragma once
 
-void register_rv64i();
-void register_loads();
-void register_stores();
+class DefaultRegistry
+{
+public:
+   static void register_rv64i();
+   static void register_loads();
+   static void register_stores();
+   static void register_branch_jump();
+   static void init_default_instructions();
+};

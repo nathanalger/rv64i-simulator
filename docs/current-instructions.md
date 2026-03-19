@@ -26,3 +26,12 @@ For convenience, I have listed (in order) the currently implemented operations.
 14. SB
 15. SH
 16. SD
+
+## Branch & Jump Instructions
+
+17. BNE
+18. BLT
+19. BGE
+20. BLTU
+21. BGEU
+22. JALR

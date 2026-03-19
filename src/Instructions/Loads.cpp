@@ -145,7 +145,7 @@ void exec_lwu(const DecodedInstruction &inst, Processor &processor)
    DEBUG_END()
 }
 
-void register_loads()
+void DefaultRegistry::register_loads()
 {
    using IR = InstructionRegistry;
 

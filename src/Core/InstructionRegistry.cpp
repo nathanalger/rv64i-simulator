@@ -1,4 +1,5 @@
 #include "InstructionRegistry.h"
+#include "DefaultRegistry.h"
 #include "IODevice.h"
 
 InstructionRegistry::Entry InstructionRegistry::table[TABLE_SIZE];
@@ -11,6 +12,9 @@ void InstructionRegistry::init()
       table[i].mask = 0;
       table[i].func = nullptr;
    }
+
+   // Initialize default registry instructions first
+   DefaultRegistry::init_default_instructions();
 }
 
 static uint32_t get_mask(MaskType type)
