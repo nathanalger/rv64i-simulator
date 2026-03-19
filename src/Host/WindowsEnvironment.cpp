@@ -98,7 +98,6 @@ void WindowsEnvironment::handle_ebreak(Processor &cpu)
    }
 
 #ifdef _WIN32
-   // Only trigger the hardware breakpoint if we are actually debugging the C++ emulator!
    if (IsDebuggerPresent())
    {
       __debugbreak();
