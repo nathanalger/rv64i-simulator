@@ -69,6 +69,18 @@ InstructionType Interpreter::interpret(uint32_t instruction)
 
    case 0x6F:
       return InstructionType::JAL;
+
+   case 0x73:
+      if (funct3 == 0)
+      {
+         uint32_t imm12 = instruction >> 20;
+
+         if (imm12 == 0)
+            return InstructionType::ECALL;
+         if (imm12 == 1)
+            return InstructionType::EBREAK;
+      }
+      break;
    }
 
    return InstructionType::UNKNOWN;
@@ -138,6 +150,8 @@ static InstructionFormat get_format(uint32_t opcode)
    case 0x03:
       return InstructionFormat::I;
    case 0x67:
+      return InstructionFormat::I;
+   case 0x73:
       return InstructionFormat::I;
 
    case 0x23:

@@ -6,6 +6,8 @@
 #include "InstructionRegistry.h"
 #include "DefaultRegistry.h"
 #include "Utility.h"
+#include "WindowsEnvironment.h"
+#include "EnvironmentDevice.h"
 
 int main(int argc, char *argv[])
 {
@@ -14,6 +16,9 @@ int main(int argc, char *argv[])
 
    // Setup IO
    io = new ConsoleIO();
+
+   // Setup Environment
+   env = new WindowsEnvironment();
 
    // CLI check
    if (argc < 2)

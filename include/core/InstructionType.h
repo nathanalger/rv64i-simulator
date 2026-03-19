@@ -18,7 +18,10 @@ enum class InstructionType
    LD,
    LBU,
    LHU,
-   LWU
+   LWU,
+
+   ECALL,
+   EBREAK
 };
 
 enum class InstructionFormat

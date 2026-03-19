@@ -2,17 +2,24 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Run RV64I Simulator",
+            "name": "Debug RV64I Simulator",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/dist/rv64i.exe",
-            "args": [],
+            "program": "${workspaceFolder}\\dist\\rv64i.exe",
+            "args": ["system.bin", "--debug"],
             "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
+            "cwd": "${workspaceFolder}\\dist",
             "environment": [],
-            "externalConsole": true,
+            "externalConsole": false,
             "MIMode": "gdb",
-            "miDebuggerPath": "gdb",
+            "miDebuggerPath": "gdb.exe", 
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
             "preLaunchTask": "build"
         }
     ]
