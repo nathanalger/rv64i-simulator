@@ -139,6 +139,14 @@ void exec_sraw(const DecodedInstruction &inst, Processor &processor)
    processor.program_counter += 4;
 }
 
+static void exec_auipc(const DecodedInstruction &inst, Processor &processor)
+{
+   // Add the sign-extended immediate to the current PC
+   processor.registers[inst.rd] = static_cast<int64_t>(inst.pc) + static_cast<int64_t>(inst.imm);
+
+   processor.program_counter += 4;
+}
+
 // Register them in DefaultRegistry
 void DefaultRegistry::register_rv64i_arithmetic()
 {
@@ -154,14 +162,18 @@ void DefaultRegistry::register_rv64i_arithmetic()
    InstructionRegistry::register_r(0x13, 0b101, 0b0000000, exec_srli);
    InstructionRegistry::register_r(0x13, 0b101, 0b0100000, exec_srai);
 
-   InstructionRegistry::register_i(0x13, 0b111, exec_andi);
-   InstructionRegistry::register_i(0x13, 0b110, exec_ori);
-   InstructionRegistry::register_i(0x13, 0b100, exec_xori);
-
    InstructionRegistry::register_r(0x3B, 0b000, 0b0000000, exec_addw);
    InstructionRegistry::register_r(0x3B, 0b000, 0b0100000, exec_subw);
-   InstructionRegistry::register_i(0x1B, 0b000, exec_addiw);
    InstructionRegistry::register_r(0x3B, 0b001, 0b0000000, exec_sllw);
    InstructionRegistry::register_r(0x3B, 0b101, 0b0000000, exec_srlw);
    InstructionRegistry::register_r(0x3B, 0b101, 0b0100000, exec_sraw);
+
+   InstructionRegistry::register_i(0x13, 0b111, exec_andi);
+   InstructionRegistry::register_i(0x13, 0b110, exec_ori);
+   InstructionRegistry::register_i(0x13, 0b100, exec_xori);
+   InstructionRegistry::register_i(0x1B, 0b000, exec_addiw);
+   InstructionRegistry::register_i(0x13, 0b010, exec_slti);
+   InstructionRegistry::register_i(0x13, 0b011, exec_sltiu);
+
+   InstructionRegistry::register_u(0x17, exec_auipc);
 }

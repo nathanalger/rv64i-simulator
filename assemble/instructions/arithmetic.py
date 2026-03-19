@@ -1,5 +1,5 @@
 from registry import register
-from formats import encode_r, encode_i
+from formats import encode_r, encode_i, encode_u
 from parse_reg import parse_reg
 
 # ----------------------
@@ -173,6 +173,32 @@ def assemble_sraw(parts, labels, current_address):
     rs2 = parse_reg(parts[3])
     return encode_r(0b0100000, rs2, rs1, 0b101, rd, 0b0111011)
 
+def assemble_slti(parts, labels, current_address):
+    if len(parts) != 4:
+        raise ValueError(f"Invalid slti format at address {current_address}")
+    rd = parse_reg(parts[1])
+    rs1 = parse_reg(parts[2])
+    imm = int(parts[3], 0)
+    return encode_i(imm, rs1, 0b010, rd, 0b0010011)
+
+def assemble_sltiu(parts, labels, current_address):
+    if len(parts) != 4:
+        raise ValueError(f"Invalid sltiu format at address {current_address}")
+    rd = parse_reg(parts[1])
+    rs1 = parse_reg(parts[2])
+    imm = int(parts[3], 0)
+    return encode_i(imm, rs1, 0b011, rd, 0b0010011)
+
+def assemble_auipc(parts, labels, current_address):
+    if len(parts) != 3:
+        raise ValueError(f"Invalid auipc format at address {current_address}")
+    
+    rd = parse_reg(parts[1])
+    imm = int(parts[2], 0)
+    
+    # encode_u takes (imm, rd, opcode)
+    return encode_u(imm, rd, 0b0010111)
+
 # ----------------------
 # Register all instructions
 # ----------------------
@@ -184,6 +210,8 @@ register("srl", assemble_srl)
 register("sra", assemble_sra)
 register("slt", assemble_slt)
 register("sltu", assemble_sltu)
+register("slti", assemble_slti)
+register("sltiu", assemble_sltiu)
 
 register("andi", assemble_andi)
 register("ori", assemble_ori)
@@ -198,3 +226,5 @@ register("addiw", assemble_addiw)
 register("sllw", assemble_sllw)
 register("srlw", assemble_srlw)
 register("sraw", assemble_sraw)
+
+register("auipc", assemble_auipc)
