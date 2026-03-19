@@ -59,3 +59,9 @@ ADDIW
 SLLW
 SRLW
 SRAW
+AUIPC
+
+## System Calls
+
+EBREAK
+ECALL
