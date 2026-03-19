@@ -5,6 +5,7 @@
 #include "InjectionLoader.h"
 #include "InstructionRegistry.h"
 #include "DefaultRegistry.h"
+#include "Utility.h"
 
 int main(int argc, char *argv[])
 {
@@ -97,7 +98,7 @@ int main(int argc, char *argv[])
          io->writeString("x");
          io->writeInt(i);
          io->writeString(" - ");
-         io->writeInt(cpu.registers[i]);
+         io->writeString(Utility::int64_to_hex(cpu.registers[i]));
          DEBUG_END()
       }
    }
