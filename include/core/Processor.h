@@ -28,6 +28,10 @@ public:
 
    Interpreter interpreter;
 
+   // CSR
+   uint64_t csrs[4096];
+   PrivilegeMode mode = PrivilegeMode::Machine;
+
    /**
     * Default constructor
     * Creates processor with default memory size (1 MB)
@@ -54,9 +58,52 @@ public:
     */
    void raiseTrap(TrapCause cause, uint64_t pc);
 
+   /**
+    * Read a Control & Status Register (CSR) value
+    */
+   uint64_t readCSR(uint16_t address);
+
+   /**
+    * Write a Control & Status Register (CSR) value
+    */
+   void writeCSR(uint16_t address, uint64_t value);
+
 private:
    /**
     * Initialize a processor instance
     */
    void initialize();
+   PrivilegeMode mode = PrivilegeMode::Machine;
+
+   // CSR List
+   // Machine-level CSRs
+   uint64_t mstatus = 0;  // Machine status
+   uint64_t misa = 0;     // ISA and extensions
+   uint64_t medeleg = 0;  // Machine exception delegation
+   uint64_t mideleg = 0;  // Machine interrupt delegation
+   uint64_t mie = 0;      // Machine interrupt-enable
+   uint64_t mtvec = 0;    // Machine trap-handler base address
+   uint64_t mscratch = 0; // Scratch register for machine trap handlers
+   uint64_t mepc = 0;     // Machine exception program counter
+   uint64_t mcause = 0;   // Machine trap cause
+   uint64_t mtval = 0;    // Machine bad address or instruction
+   uint64_t mip = 0;      // Machine interrupt pending
+
+   // Supervisor-level CSRs
+   uint64_t sstatus = 0;  // Supervisor status (technically a restricted view of mstatus)
+   uint64_t sie = 0;      // Supervisor interrupt-enable
+   uint64_t stvec = 0;    // Supervisor trap handler base address
+   uint64_t sscratch = 0; // Scratch register for supervisor trap handlers
+   uint64_t sepc = 0;     // Supervisor exception program counter
+   uint64_t scause = 0;   // Supervisor trap cause
+   uint64_t stval = 0;    // Supervisor bad address or instruction
+   uint64_t sip = 0;      // Supervisor interrupt pending
+   uint64_t satp = 0;     // Supervisor address translation and protection (MMU)
+};
+
+enum class PrivilegeMode : uint8_t
+{
+   User = 0,
+   Supervisor = 1,
+   Machine = 3
 };

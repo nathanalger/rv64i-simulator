@@ -111,6 +111,11 @@ void InstructionRegistry::register_u(uint32_t opcode, ExecFunc func)
    register_inst(opcode, mask, func);
 }
 
+void InstructionRegistry::register_exact(uint32_t key, ExecFunc func)
+{
+   register_inst(key, 0xFFFFFFFF, func);
+}
+
 void InstructionRegistry::register_opcode(uint32_t opcode, ExecFunc func)
 {
    uint32_t mask = get_mask(MaskType::OPCODE_ONLY);
