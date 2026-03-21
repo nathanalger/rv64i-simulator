@@ -7,103 +7,54 @@
 #include "DefaultRegistry.h"
 #include "Utility.h"
 #include "WindowsEnvironment.h"
+#include "LoaderDevice.h"
 #include "EnvironmentDevice.h"
+#include "Bus.h"
+#include "CLI.h"
 
 int main(int argc, char *argv[])
 {
-   size_t memory_kb = 1024;
-   bool debug_enabled = false;
-
-   // Setup IO
    io = new ConsoleIO();
-
-   // Setup Environment
    env = new WindowsEnvironment();
 
-   // CLI check
-   if (argc < 2)
-   {
-      io->writeString("Usage: rv64i <binary_file> [--memory kb] [--debug]\n");
+   CLI config = parseCommandLine(argc, argv);
+   if (!config.valid)
       return 1;
-   }
 
-   const char *filename = argv[1];
-
-   for (int i = 2; i < argc; i++)
-   {
-      std::string arg = argv[i];
-
-      if (arg == "--debug")
-      {
-         debug_enabled = true;
-      }
-      else if (arg == "--memory")
-      {
-         if (i + 1 >= argc)
-         {
-            io->writeString("Error: --memory requires a value\n");
-            return 1;
-         }
-
-         memory_kb = std::stoul(argv[i + 1]);
-         i++; // skip next argument
-      }
-      else
-      {
-         io->writeString("Unknown argument: ");
-         io->writeString(arg.c_str());
-         io->writeString("\n");
-         return 1;
-      }
-   }
-
-   if (debug_enabled)
+   if (config.debug_enabled)
    {
       Debug::enable();
    }
 
-   // Initialize the registry
    InstructionRegistry::init();
 
-   // Setup memory + CPU
-   Memory mem(memory_kb * 1024);
+   Memory mem(config.memory_kb * 1024);
    DEBUG_LOG("Memory Initialized Successfully");
+   UART *my_uart = new UART(io, 0x10000000);
 
-   Processor cpu(mem);
+   const uint64_t RAM_BASE = 0x80000000;
+   Bus bus(mem, io, RAM_BASE, my_uart);
+
+   Processor cpu(bus);
    DEBUG_LOG("Processor Initialized Successfully");
 
-   // Load program
-   InjectionLoader loader(filename);
+   loader = new InjectionLoader(config.filename.c_str());
+   loader->load(bus, RAM_BASE);
 
-   uint64_t text_end = loader.load(mem);
-   if (text_end == 0)
-   {
-      io->writeString("Failed to load file.\n");
-      return 1;
-   }
-
-   cpu.text_end = text_end;
-
-   cpu.program_counter = 0;
+   cpu.program_counter = RAM_BASE;
    cpu.registers[2] = mem.getSize();
 
    cpu.run();
 
-   // Debug output
    if (Debug::enabled())
    {
-      DEBUG_LOG("Final register values after execution:");
-
-      for (int i = 0; i < 32; i++)
-      {
-         DEBUG_BEGIN()
-         io->writeString("x");
-         io->writeInt(i);
-         io->writeString(" - ");
-         io->writeString(Utility::int64_to_hex(cpu.registers[i]));
-         DEBUG_END()
-      }
+      Debug::printDebugRegisters(cpu);
    }
+
+   delete loader;
+   delete env;
+   delete io;
+   delete my_uart;
 
    return 0;
 }

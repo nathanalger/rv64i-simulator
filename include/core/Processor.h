@@ -3,6 +3,7 @@
 #include "Memory.h"
 #include "TrapCause.h"
 #include "EnvironmentDevice.h"
+#include "Bus.h"
 #include <cstdint>
 
 enum class PrivilegeMode : uint8_t
@@ -34,7 +35,7 @@ public:
 
    uint64_t text_end;
 
-   Memory &memory;
+   Bus &bus;
    uint32_t memory_size;
 
    bool trap;
@@ -64,7 +65,7 @@ public:
     * Default constructor
     * Creates processor with default memory size (1 MB)
     */
-   Processor(Memory &mem);
+   Processor(Bus &bus);
 
    /**
     * Reset the processor to its base state.

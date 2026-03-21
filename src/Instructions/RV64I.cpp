@@ -153,9 +153,9 @@ void exec_jal(const DecodedInstruction &inst, Processor &processor)
    io->writeString(", ");
    io->writeSignedInt(static_cast<int64_t>(processor.program_counter) - static_cast<int64_t>(old_pc));
    io->writeString(" (PC: ");
-   io->writeInt((int32_t)old_pc);
+   io->writeInt(old_pc);
    io->writeString(" -> ");
-   io->writeInt((int32_t)processor.program_counter);
+   io->writeInt(processor.program_counter);
    io->writeString(")");
    DEBUG_END()
 }

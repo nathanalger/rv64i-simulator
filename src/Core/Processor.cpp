@@ -6,7 +6,7 @@
 
 const uint64_t STACK_GUARD = 8;
 
-Processor::Processor(Memory &mem) : memory(mem)
+Processor::Processor(Bus &b) : bus(b)
 {
    initialize();
 }
@@ -52,7 +52,7 @@ bool Processor::step()
    }
 
    // Fetch instruction using the TRANSLATED physical address
-   uint32_t instruction = memory.readWord(physical_pc);
+   uint32_t instruction = bus.readWord(physical_pc);
 
    // Send instruction to interpreter
    interpreter.handle(instruction, *this);
@@ -64,6 +64,8 @@ bool Processor::step()
    if (program_counter == old_pc)
    {
       raiseTrap(TrapCause::NONE, program_counter);
+      trap_cause = TrapCause::NONE;
+      trap = true;
    }
 
    checkInterrupts();
@@ -87,6 +89,7 @@ void Processor::run()
       io->writeInt(trap_pc);
       io->writeString(". Cause: ");
       io->writeString(trapCauseToString(trap_cause));
+      io->writeString("\n");
    }
    else
    {
@@ -199,7 +202,7 @@ bool Processor::translate(uint64_t vaddr, uint64_t &paddr, AccessType type)
       uint64_t pte_addr = a + (vpn[i] * 8);
 
       // Read 64-bit PTE (using two 32-bit reads)
-      uint64_t pte = memory.readDouble(pte_addr);
+      uint64_t pte = bus.readDouble(pte_addr);
 
       // Check if PTE is Valid. Also, Write-only pages are illegal in RISC-V.
       if ((pte & PTE_V) == 0 || (((pte & PTE_R) == 0) && ((pte & PTE_W) == PTE_W)))
@@ -281,7 +284,7 @@ uint8_t Processor::readMemoryByte(uint64_t vaddr)
 {
    uint64_t paddr;
    if (translate(vaddr, paddr, AccessType::LOAD))
-      return memory.readByte(paddr);
+      return bus.readByte(paddr);
    raiseTrap(TrapCause::LOAD_ACCESS_FAULT, vaddr);
    return 0;
 }
@@ -290,7 +293,7 @@ void Processor::writeMemoryByte(uint64_t vaddr, uint8_t value)
 {
    uint64_t paddr;
    if (translate(vaddr, paddr, AccessType::STORE))
-      memory.writeByte(paddr, value);
+      bus.writeByte(paddr, value);
    else
       raiseTrap(TrapCause::STORE_ACCESS_FAULT, vaddr);
 }
@@ -300,7 +303,7 @@ uint32_t Processor::readMemoryWord(uint64_t vaddr)
    uint64_t paddr;
    if (translate(vaddr, paddr, AccessType::LOAD))
    {
-      return memory.readWord(paddr);
+      return bus.readWord(paddr);
    }
    else
    {
@@ -314,7 +317,7 @@ uint16_t Processor::readMemoryHalf(uint64_t vaddr)
    uint64_t paddr;
    if (translate(vaddr, paddr, AccessType::LOAD))
    {
-      return memory.readHalf(paddr);
+      return bus.readHalf(paddr);
    }
    else
    {
@@ -328,7 +331,7 @@ void Processor::writeMemoryHalf(uint64_t vaddr, uint16_t value)
    uint64_t paddr;
    if (translate(vaddr, paddr, AccessType::STORE))
    {
-      memory.writeHalf(paddr, value);
+      bus.writeHalf(paddr, value);
    }
    else
    {
@@ -341,7 +344,7 @@ void Processor::writeMemoryWord(uint64_t vaddr, uint32_t value)
    uint64_t paddr;
    if (translate(vaddr, paddr, AccessType::STORE))
    {
-      memory.writeWord(paddr, value);
+      bus.writeWord(paddr, value);
    }
    else
    {
@@ -360,7 +363,7 @@ uint64_t Processor::readMemoryDouble(uint64_t vaddr)
       if (paddr == CLINT_MTIMECMP)
          return mtimecmp;
 
-      return memory.readDouble(paddr);
+      return bus.readDouble(paddr);
    }
    raiseTrap(TrapCause::LOAD_ACCESS_FAULT, vaddr);
    return 0;
@@ -382,7 +385,7 @@ void Processor::writeMemoryDouble(uint64_t vaddr, uint64_t value)
       // Note: mtime is usually read-only to software, but some implementations allow writes.
       // We'll leave it out for strictness unless you find your OS needs it.
 
-      memory.writeDouble(paddr, value);
+      bus.writeDouble(paddr, value);
    }
    else
    {

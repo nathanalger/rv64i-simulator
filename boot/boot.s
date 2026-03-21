@@ -1,47 +1,44 @@
-.section .text
 .global _start
+.text
 
 _start:
-    # 1. Set mtvec (Machine Trap Vector) to our custom handler
-    la t0, trap_handler
-    csrw mtvec, t0
-
-    # 2. Schedule the first timer interrupt (mtimecmp = mtime + 50)
-    li t0, 0x0200BFF8      # CLINT_MTIME address
-    li t1, 0x02004000      # CLINT_MTIMECMP address
-    ld t2, 0(t0)           # Read current mtime
-    addi t2, t2, 50        # Add 50 cycles
-    sd t2, 0(t1)           # Write to mtimecmp
-
-    # 3. Enable Machine Timer Interrupts (MTIE is bit 7 in mie register)
-    li t0, 0x80            # 1000 0000 in binary
-    csrs mie, t0
-
-    # 4. Enable Global Machine Interrupts (MIE is bit 3 in mstatus)
-    li t0, 0x8             # 1000 in binary
-    csrs mstatus, t0
-
-wait_for_interrupt:
-    # 5. Spin and wait. We increment t3 just so the PC changes 
-    # and doesn't trigger your bare-metal infinite loop halt detector.
-    addi t3, t3, 1         
-    j wait_for_interrupt   
-
-trap_handler:
-    # --- The CPU teleports here when mtime >= mtimecmp ---
-
-    # 1. We could read mcause here to check why we trapped, 
-    # but since we only enabled the timer, we know what caused it.
+    # t0 = UART base address (0x10000000)
+    li t0, 0x10000000
     
-    # 2. Schedule the next interrupt (mtimecmp += 50)
-    li t1, 0x02004000      # CLINT_MTIMECMP
-    ld t2, 0(t1)
-    addi t2, t2, 50
-    sd t2, 0(t1)
-    
-    # Increment t4 just so we can observe the handler ran!
-    addi t4, t4, 1
+    # t1 = Address of the string we want to print
+    la t1, hello_str
 
-    # 3. Return to the wait_for_interrupt loop
-    mret
+print_loop:
+    # Load the next byte (character) from the string into t2
+    lbu t2, 0(t1)
+    
+    # If the character is 0 (null terminator), we are done printing
+    beqz t2, halt
+
+wait_ready:
+    # Read the LSR (Line Status Register) at offset 5: 0x10000005
+    lbu t3, 5(t0)
+    
+    # Bit 5 (0x20) tells us if the Transmitter Holding Register is empty
+    andi t3, t3, 0x20
+    
+    # If the bit is 0, the UART is busy. Jump back and keep waiting.
+    beqz t3, wait_ready
+
+    # The UART is ready! Store the character (t2) into the THR at offset 0
+    sb t2, 0(t0)
+
+    # Move to the next character in the string
+    addi t1, t1, 1
+    
+    # Repeat the loop
+    j print_loop
+
+halt:
+    # Infinite loop to trap the CPU when finished
+    j halt
+
+.data
+hello_str:
+    .asciz "Hello from the UART!\n"
     

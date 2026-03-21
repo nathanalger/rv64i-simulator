@@ -1,0 +1,54 @@
+#include "CLI.h"
+#include "IODevice.h"
+
+// Assuming your global 'io' pointer is declared via extern in IODevice.h or similar.
+// If it's not, you might need: extern IODevice* io;
+
+CLI parseCommandLine(int argc, char *argv[])
+{
+   CLI config;
+
+   if (argc < 2)
+   {
+      if (io)
+         io->writeString("Usage: rv64i <binary_file> [--memory kb] [--debug]\n");
+      return config; // Invalid config
+   }
+
+   config.filename = argv[1];
+   config.valid = true;
+
+   for (int i = 2; i < argc; i++)
+   {
+      std::string arg = argv[i];
+
+      if (arg == "--debug")
+      {
+         config.debug_enabled = true;
+      }
+      else if (arg == "--memory")
+      {
+         if (i + 1 >= argc)
+         {
+            if (io)
+               io->writeString("Error: --memory requires a value\n");
+            config.valid = false;
+            return config;
+         }
+         config.memory_kb = std::stoul(argv[i + 1]);
+         i++;
+      }
+      else
+      {
+         if (io)
+         {
+            io->writeString("Unknown argument: ");
+            io->writeString(arg.c_str());
+            io->writeString("\n");
+         }
+         config.valid = false;
+         return config;
+      }
+   }
+   return config;
+}

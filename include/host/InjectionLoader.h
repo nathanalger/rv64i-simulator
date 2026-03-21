@@ -1,6 +1,7 @@
 #pragma once
 #include "Memory.h"
 #include "ILoader.h"
+#include "Bus.h"
 #include <string>
 
 /**
@@ -14,7 +15,7 @@ class InjectionLoader : public ILoader
 {
 public:
    InjectionLoader(const std::string &file) : filename(file) {}
-   uint64_t load(Memory &mem) override;
+   uint64_t load(Bus &bus, uint64_t start_address) override;
 
 private:
    std::string filename;

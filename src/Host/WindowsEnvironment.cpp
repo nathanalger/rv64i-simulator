@@ -31,7 +31,7 @@ void WindowsEnvironment::handle_ecall(Processor &cpu)
       // arg0 = fd (1 is stdout), arg1 = guest address of buffer, arg2 = length
       for (uint64_t i = 0; i < arg2; ++i)
       {
-         char c = static_cast<char>(cpu.memory.readByte(arg1 + i));
+         char c = static_cast<char>(cpu.bus.readByte(arg1 + i));
          if (io)
             io->writeChar(c);
       }
@@ -48,7 +48,7 @@ void WindowsEnvironment::handle_ecall(Processor &cpu)
 
       for (uint64_t i = 0; i < bytes_to_copy; ++i)
       {
-         cpu.memory.writeByte(arg1 + i, input[i]);
+         cpu.bus.writeByte(arg1 + i, input[i]);
       }
       cpu.registers[10] = bytes_to_copy;
       break;
