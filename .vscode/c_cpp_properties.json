@@ -5,6 +5,7 @@
             "includePath": [
                 "${workspaceFolder}/include/core",
                 "${workspaceFolder}/include/host",
+                "${workspaceFolder}/include/systems",
                 "${workspaceFolder}/src"
             ],
             "defines": [

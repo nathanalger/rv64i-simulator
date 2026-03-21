@@ -11,6 +11,9 @@
 #include "EnvironmentDevice.h"
 #include "Bus.h"
 #include "CLI.h"
+#include "ISystem.h"
+#include "OpenSBISystem.h"
+#include "DefaultSystem.h"
 
 int main(int argc, char *argv[])
 {
@@ -28,18 +31,19 @@ int main(int argc, char *argv[])
 
    InstructionRegistry::init();
 
+   DefaultSystem system;
+   const uint64_t RAM_BASE = system.getRamBase();
+
    Memory mem(config.memory_kb * 1024);
-   DEBUG_LOG("Memory Initialized Successfully");
    UART *my_uart = new UART(io, 0x10000000);
-
-   const uint64_t RAM_BASE = 0x80000000;
    Bus bus(mem, io, RAM_BASE, my_uart);
-
    Processor cpu(bus);
-   DEBUG_LOG("Processor Initialized Successfully");
+   DEBUG_LOG("Hardware Initialized Successfully");
 
-   loader = new InjectionLoader(config.filename.c_str());
-   loader->load(bus, RAM_BASE);
+   loader = new InjectionLoader();
+   loader->load(bus, RAM_BASE, config.filename);
+
+   system.boot(cpu, mem, bus);
 
    cpu.program_counter = RAM_BASE;
    cpu.registers[2] = mem.getSize();

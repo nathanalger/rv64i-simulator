@@ -7,7 +7,6 @@
 #endif
 
 #include "WindowsEnvironment.h"
-#include <cstdlib>
 #include <string>
 #include <iostream>
 

@@ -1,14 +1,16 @@
+// ILoader.h
 #pragma once
-#include "Memory.h"
+#include <string>
+#include <cstdint>
 #include "Bus.h"
 
 class ILoader
 {
 public:
    /**
-    * Returns the next free address after loading the
-    * program into memory. Returns 0 upon failure.
+    * Loads a file into the bus at the specified address.
+    * Returns the number of bytes loaded, or 0 on failure.
     */
-   virtual uint64_t load(Bus &bus, uint64_t start_address) = 0;
+   virtual uint64_t load(Bus &bus, uint64_t start_address, const char *filename) = 0;
    virtual ~ILoader() = default;
 };

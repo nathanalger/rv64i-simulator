@@ -129,4 +129,7 @@ private:
    uint64_t stval = 0;    // Supervisor bad address or instruction
    uint64_t sip = 0;      // Supervisor interrupt pending
    uint64_t satp = 0;     // Supervisor address translation and protection (MMU)
+
+   uint64_t pmpcfg[16] = {0};
+   uint64_t pmpaddr[64] = {0};
 };

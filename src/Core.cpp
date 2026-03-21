@@ -4,6 +4,8 @@
 #include "DefaultRegistry.h"
 #include "InstructionRegistry.h"
 #include "LoaderDevice.h"
+#include "Bus.h"
+#include "DefaultSystem.h"
 
 /**
  * This is an entrypoint for the simulator that is intended to be used on an operating system.
@@ -19,13 +21,17 @@ int main()
    // Initialize the registry
    InstructionRegistry::init();
 
+   ISystem *system = new DefaultSystem();
+
    // Create a central processor with 1MB of RAM.
    Memory mem(1024 * 1024);
    Bus bus(mem, io, 0);
    Processor cpu(bus);
 
+   system->boot(cpu, mem, bus);
    cpu.run();
 
+   delete system;
    delete io;
    delete loader;
    delete env;

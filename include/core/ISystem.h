@@ -1,0 +1,14 @@
+#pragma once
+#include <cstdint>
+#include "Processor.h"
+#include "Memory.h"
+
+class ISystem
+{
+public:
+   virtual ~ISystem() = default;
+
+   virtual uint64_t getRamBase() const = 0;
+
+   virtual void boot(Processor &cpu, Memory &mem, Bus &bus) = 0;
+};

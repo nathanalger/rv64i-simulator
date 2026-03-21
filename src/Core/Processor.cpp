@@ -4,6 +4,8 @@
 #include "IODevice.h"
 #include "Constants.h"
 
+// TODO: Memory is not currently strictly protected.
+
 const uint64_t STACK_GUARD = 8;
 
 Processor::Processor(Bus &b) : bus(b)
@@ -483,7 +485,20 @@ uint64_t Processor::readCSR(uint16_t address)
       return satp;
 
    default:
-      return 0; // Or raise an Illegal Instruction trap
+      // PMP Configuration Registers (0x3A0 - 0x3AF)
+      if (address >= 0x3A0 && address <= 0x3AF)
+      {
+         return pmpcfg[address - 0x3A0];
+      }
+      // PMP Address Registers (0x3B0 - 0x3EF)
+      if (address >= 0x3B0 && address <= 0x3EF)
+      {
+         return pmpaddr[address - 0x3B0];
+      }
+
+      // If we get here, it's a truly unimplemented CSR.
+      raiseTrap(TrapCause::ILLEGAL_INSTRUCTION, program_counter);
+      return 0;
    }
 }
 
@@ -495,7 +510,6 @@ void Processor::writeCSR(uint16_t address, uint64_t val)
    case 0x300:
       mstatus = val;
       break;
-   // Note: misa is usually read-only in simple sims
    case 0x301:
       misa = val;
       break;
@@ -554,6 +568,24 @@ void Processor::writeCSR(uint16_t address, uint64_t val)
       break;
    case 0x180:
       satp = val;
+      break;
+
+   default:
+      // PMP Configuration Registers (0x3A0 - 0x3AF)
+      if (address >= 0x3A0 && address <= 0x3AF)
+      {
+         pmpcfg[address - 0x3A0] = val;
+         return;
+      }
+      // PMP Address Registers (0x3B0 - 0x3EF)
+      if (address >= 0x3B0 && address <= 0x3EF)
+      {
+         pmpaddr[address - 0x3B0] = val;
+         return;
+      }
+
+      // If we get here, it's a truly unimplemented CSR.
+      raiseTrap(TrapCause::ILLEGAL_INSTRUCTION, program_counter);
       break;
    }
 }
