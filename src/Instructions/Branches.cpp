@@ -7,82 +7,66 @@
 
 void exec_bne(const DecodedInstruction &inst, Processor &processor)
 {
-   int64_t old_pc = processor.program_counter;
-
+   // branch relative to the start of this instruction
    if (processor.registers[inst.rs1] != processor.registers[inst.rs2])
    {
-      processor.program_counter = old_pc + inst.imm;
+      processor.program_counter = inst.pc + inst.imm;
    }
-   else
-   {
-      processor.program_counter += 4;
-   }
+   // Else: Do nothing. Processor::step will add inst.length automatically.
 }
 
 void exec_blt(const DecodedInstruction &inst, Processor &processor)
 {
-   int64_t old_pc = processor.program_counter;
-
-   if ((int64_t)processor.registers[inst.rs1] < (int64_t)processor.registers[inst.rs2])
+   if (static_cast<int64_t>(processor.registers[inst.rs1]) < static_cast<int64_t>(processor.registers[inst.rs2]))
    {
-      processor.program_counter = old_pc + inst.imm;
-   }
-   else
-   {
-      processor.program_counter += 4;
+      processor.program_counter = inst.pc + inst.imm;
    }
 }
 
 void exec_bge(const DecodedInstruction &inst, Processor &processor)
 {
-   int64_t old_pc = processor.program_counter;
-
-   if ((int64_t)processor.registers[inst.rs1] >= (int64_t)processor.registers[inst.rs2])
+   if (static_cast<int64_t>(processor.registers[inst.rs1]) >= static_cast<int64_t>(processor.registers[inst.rs2]))
    {
-      processor.program_counter = old_pc + inst.imm;
-   }
-   else
-   {
-      processor.program_counter += 4;
+      processor.program_counter = inst.pc + inst.imm;
    }
 }
 
 void exec_bltu(const DecodedInstruction &inst, Processor &processor)
 {
-   int64_t old_pc = processor.program_counter;
-
-   if ((uint64_t)processor.registers[inst.rs1] < (uint64_t)processor.registers[inst.rs2])
+   if (static_cast<uint64_t>(processor.registers[inst.rs1]) < static_cast<uint64_t>(processor.registers[inst.rs2]))
    {
-      processor.program_counter = old_pc + inst.imm;
-   }
-   else
-   {
-      processor.program_counter += 4;
+      processor.program_counter = inst.pc + inst.imm;
    }
 }
 
 void exec_bgeu(const DecodedInstruction &inst, Processor &processor)
 {
-   int64_t old_pc = processor.program_counter;
-
-   if ((uint64_t)processor.registers[inst.rs1] >= (uint64_t)processor.registers[inst.rs2])
+   if (static_cast<uint64_t>(processor.registers[inst.rs1]) >= static_cast<uint64_t>(processor.registers[inst.rs2]))
    {
-      processor.program_counter = old_pc + inst.imm;
-   }
-   else
-   {
-      processor.program_counter += 4;
+      processor.program_counter = inst.pc + inst.imm;
    }
 }
 
 void exec_jalr(const DecodedInstruction &inst, Processor &processor)
 {
-   int64_t old_pc = processor.program_counter;
-
+   // 1. Calculate the target (rs1 + imm) and clear the lowest bit
    int64_t target = (processor.registers[inst.rs1] + inst.imm) & ~1;
 
-   processor.registers[inst.rd] = old_pc + 4;
+   // 2. Link register stores the address of the NEXT instruction
+   // We use inst.length (2 or 4) to handle compressed JALR expansions correctly
+   processor.registers[inst.rd] = inst.pc + inst.length;
+
+   // 3. Update the PC
    processor.program_counter = target;
+
+   DEBUG_BEGIN()
+   io->writeString("JALR x");
+   io->writeInt(inst.rd);
+   io->writeString(", x");
+   io->writeInt(inst.rs1);
+   io->writeString(" -> PC: ");
+   io->writeInt(processor.program_counter);
+   DEBUG_END()
 }
 
 void DefaultRegistry::register_branch_jump()

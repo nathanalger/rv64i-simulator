@@ -20,15 +20,16 @@ struct DecodedInstruction
 
    // Helpful for branch instructions
    int64_t pc;
+   int64_t length;
 };
 
 class Interpreter
 {
 public:
    using ExecFunc = void (*)(const DecodedInstruction &, Processor &);
-   bool handle(uint32_t raw, Processor &processor);
+   bool handle(uint32_t raw, Processor &processor, uint8_t length);
 
 private:
    InstructionType interpret(uint32_t instruction);
-   DecodedInstruction decode(uint32_t raw, Processor &processor);
+   DecodedInstruction decode(uint32_t raw, Processor &processor, uint8_t length);
 };

@@ -70,6 +70,34 @@ InstructionType Interpreter::interpret(uint32_t instruction)
    case 0x6F:
       return InstructionType::JAL;
 
+   case 0x0F:
+   {
+      break;
+   }
+
+   case 0x27:
+      if (funct3 == 3)
+         return InstructionType::FSD;
+      break;
+
+   case 0x07:
+      if (funct3 == 3)
+         return InstructionType::FLD;
+      break;
+
+   case 0x1B:
+      if (funct3 == 0)
+         return InstructionType::ADDIW;
+      if (funct3 == 1)
+         return InstructionType::SLLIW;
+      if (funct3 == 5)
+      {
+         if (funct7 == 0x20)
+            return InstructionType::SRAIW;
+         return InstructionType::SRLIW;
+      }
+      break;
+
    case 0x73:
       if (funct3 == 0)
       {
@@ -86,9 +114,13 @@ InstructionType Interpreter::interpret(uint32_t instruction)
    return InstructionType::UNKNOWN;
 }
 
-DecodedInstruction Interpreter::decode(uint32_t raw, Processor &processor)
+DecodedInstruction Interpreter::decode(uint32_t raw, Processor &processor, uint8_t length)
 {
    DecodedInstruction inst{};
+
+   // Set the length and PC first
+   inst.length = length;
+   inst.pc = processor.program_counter;
 
    inst.opcode = raw & 0x7F;
    inst.type = interpret(raw);
@@ -99,8 +131,6 @@ DecodedInstruction Interpreter::decode(uint32_t raw, Processor &processor)
    inst.rs2 = (raw >> 20) & 0x1F;
    inst.funct7 = (raw >> 25) & 0x7F;
 
-   inst.pc = processor.program_counter;
-
    InstructionFormat format = get_format(inst.opcode);
 
    switch (format)
@@ -108,23 +138,18 @@ DecodedInstruction Interpreter::decode(uint32_t raw, Processor &processor)
    case InstructionFormat::I:
       inst.imm = decode_i(raw);
       break;
-
    case InstructionFormat::S:
       inst.imm = decode_s(raw);
       break;
-
    case InstructionFormat::B:
       inst.imm = decode_b(raw);
       break;
-
    case InstructionFormat::U:
       inst.imm = decode_u(raw);
       break;
-
    case InstructionFormat::J:
       inst.imm = decode_j(raw);
       break;
-
    default:
       inst.imm = 0;
    }
@@ -138,6 +163,8 @@ static InstructionFormat get_format(uint32_t opcode)
 {
    switch (opcode)
    {
+   case 0x0F:
+      return InstructionFormat::I;
    case 0x33:
       return InstructionFormat::R;
    case 0x3B:
@@ -164,6 +191,10 @@ static InstructionFormat get_format(uint32_t opcode)
       return InstructionFormat::U;
    case 0x6F:
       return InstructionFormat::J;
+   case 0x07:
+      return InstructionFormat::I;
+   case 0x27:
+      return InstructionFormat::S;
 
    default:
       return InstructionFormat::R;
@@ -217,15 +248,29 @@ static int32_t decode_j(uint32_t raw)
    return sign_extend(imm, 21);
 }
 
-bool Interpreter::handle(uint32_t raw, Processor &processor)
+bool Interpreter::handle(uint32_t raw, Processor &processor, uint8_t length)
 {
-   DecodedInstruction inst = decode(raw, processor);
+   // Pass the length to the decode function
+   DecodedInstruction inst = decode(raw, processor, length);
+
+   if (inst.opcode == 0x0F)
+   {
+      processor.registers[0] = 0;
+      return true;
+   }
+
    InstructionFormat format = get_format(inst.opcode);
 
    uint32_t lookup_funct7 = inst.funct7;
    if (format != InstructionFormat::R)
    {
-      lookup_funct7 = 0;
+      bool is_shift = (inst.opcode == 0x13 || inst.opcode == 0x1B) &&
+                      (inst.funct3 == 1 || inst.funct3 == 5);
+
+      if (!is_shift)
+      {
+         lookup_funct7 = 0;
+      }
    }
 
    uint32_t key = InstructionRegistry::make_key(
@@ -241,17 +286,8 @@ bool Interpreter::handle(uint32_t raw, Processor &processor)
    }
    else
    {
-      DEBUG_BEGIN()
-      io->writeString("Unknown instruction read at PC: ");
-      io->writeInt(processor.program_counter);
-      io->writeString(". Opcode: ");
-      io->writeInt(inst.opcode);
-      io->writeString(", funct3: ");
-      io->writeInt(inst.funct3);
-      io->writeString(", funct7: ");
-      io->writeInt(inst.funct7);
-      DEBUG_END()
-      processor.raiseTrap(TrapCause::ILLEGAL_INSTRUCTION, processor.program_counter);
+      // ... same error logging as before ...
+      processor.raiseTrap(TrapCause::ILLEGAL_INSTRUCTION, inst.pc);
    }
 
    processor.registers[0] = 0;

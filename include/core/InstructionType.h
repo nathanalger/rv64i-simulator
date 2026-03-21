@@ -20,6 +20,14 @@ enum class InstructionType
    LHU,
    LWU,
 
+   ADDIW,
+   SLLIW,
+   SRAIW,
+   SRLIW,
+
+   FSD,
+   FLD,
+
    ECALL,
    EBREAK
 };

@@ -20,17 +20,18 @@ public:
    {
       cpu.program_counter = getRamBase();
 
-      // Stack pointer to top of RAM
+      cpu.writeCSR(0x301, (2ULL << 62) | (1 << 12) | (1 << 8) | (1 << 2) | (1 << 0));
+      cpu.writeCSR(0x300, (3ULL << 11));
+      cpu.writeCSR(0x3A0, 0x1F);
+      cpu.writeCSR(0x3B0, 0xFFFFFFFFFFFFFFFFULL);
+
       cpu.registers[2] = getRamBase() + mem.getSize();
 
-      // a0 (x10) = Hart ID 0
       cpu.registers[10] = 0;
 
-      // a1 (x11) = DTB Address (1MB from the end of RAM)
       uint64_t dtb_address = getRamBase() + mem.getSize() - (1024 * 1024);
       cpu.registers[11] = dtb_address;
 
-      // Use the abstract loader to push the DTB into the bus
       const char *sysfilename = "system.dtb";
       if (loader->load(bus, dtb_address, sysfilename))
       {

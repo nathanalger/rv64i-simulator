@@ -12,7 +12,6 @@ void exec_lb(const DecodedInstruction &inst, Processor &processor)
 
    int8_t signed_value = static_cast<int8_t>(value);
    processor.registers[inst.rd] = signed_value;
-   processor.program_counter += 4;
 
    DEBUG_BEGIN()
    io->writeString("LB x");
@@ -38,7 +37,6 @@ void exec_lh(const DecodedInstruction &inst, Processor &processor)
 
    int16_t signed_value = static_cast<int16_t>(value);
    processor.registers[inst.rd] = signed_value;
-   processor.program_counter += 4;
 
    DEBUG_BEGIN()
    io->writeString("LH x");
@@ -63,7 +61,6 @@ void exec_ld(const DecodedInstruction &inst, Processor &processor)
    uint64_t value = processor.readMemoryDouble(address);
 
    processor.registers[inst.rd] = value;
-   processor.program_counter += 4;
 
    DEBUG_BEGIN()
    io->writeString("LD x");
@@ -85,7 +82,6 @@ void exec_lbu(const DecodedInstruction &inst, Processor &processor)
    uint8_t value = processor.readMemoryByte(address);
 
    processor.registers[inst.rd] = static_cast<uint8_t>(value);
-   processor.program_counter += 4;
 
    DEBUG_BEGIN()
    io->writeString("LBU x");
@@ -107,7 +103,6 @@ void exec_lhu(const DecodedInstruction &inst, Processor &processor)
    uint16_t value = processor.readMemoryHalf(address);
 
    processor.registers[inst.rd] = static_cast<uint16_t>(value);
-   processor.program_counter += 4;
 
    DEBUG_BEGIN()
    io->writeString("LHU x");
@@ -129,7 +124,6 @@ void exec_lwu(const DecodedInstruction &inst, Processor &processor)
    uint32_t value = processor.readMemoryWord(address);
 
    processor.registers[inst.rd] = static_cast<uint32_t>(value);
-   processor.program_counter += 4;
 
    DEBUG_BEGIN()
    io->writeString("LWU x");
@@ -150,8 +144,6 @@ void exec_lui(const DecodedInstruction &inst, Processor &processor)
    // LUI rd, imm
    // Load 20-bit immediate into upper 20 bits of rd, lower 12 bits = 0
    processor.registers[inst.rd] = static_cast<int64_t>(inst.imm);
-
-   processor.program_counter += 4;
 
    DEBUG_BEGIN()
    io->writeString("LUI x");

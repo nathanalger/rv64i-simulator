@@ -30,10 +30,16 @@ public:
    // Array 32 count 64-bit width registers
    uint64_t registers[32];
 
+   // Floating point registers
+   uint64_t f_registers[32] = {0};
+
    // 64 bit width integer that stores current instruction address
    uint64_t program_counter;
-
+   uint64_t step_count = 0;
    uint64_t text_end;
+
+   uint64_t load_reservation = 0;
+   bool reservation_valid = false;
 
    Bus &bus;
    uint32_t memory_size;
@@ -86,6 +92,8 @@ public:
     * Throw a trap with reason to the processor and halt execution.
     */
    void raiseTrap(TrapCause cause, uint64_t pc);
+
+   uint32_t decompress(uint16_t instr);
 
    /**
     * Read a Control & Status Register (CSR) value

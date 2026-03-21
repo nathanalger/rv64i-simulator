@@ -11,7 +11,6 @@ void exec_sb(const DecodedInstruction &inst, Processor &processor)
    uint8_t value = static_cast<uint8_t>(processor.registers[inst.rs2]);
 
    processor.writeMemoryByte(address, value);
-   processor.program_counter += 4;
 
    DEBUG_BEGIN()
    io->writeString("SB x");
@@ -33,7 +32,6 @@ void exec_sh(const DecodedInstruction &inst, Processor &processor)
    uint16_t value = static_cast<uint16_t>(processor.registers[inst.rs2]);
 
    processor.writeMemoryHalf(address, value);
-   processor.program_counter += 4;
 
    DEBUG_BEGIN()
    io->writeString("SH x");
@@ -55,7 +53,6 @@ void exec_sd(const DecodedInstruction &inst, Processor &processor)
    uint64_t value = processor.registers[inst.rs2];
 
    processor.writeMemoryDouble(address, value);
-   processor.program_counter += 4;
 
    DEBUG_BEGIN()
    io->writeString("SD x");

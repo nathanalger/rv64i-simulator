@@ -13,8 +13,6 @@ void exec_add(const DecodedInstruction &inst, Processor &processor)
        processor.registers[inst.rs1] +
        processor.registers[inst.rs2];
 
-   processor.program_counter += 4;
-
    DEBUG_BEGIN()
    io->writeString("ADD x");
    io->writeInt(inst.rd);
@@ -32,8 +30,6 @@ void exec_sub(const DecodedInstruction &inst, Processor &processor)
    processor.registers[inst.rd] =
        processor.registers[inst.rs1] -
        processor.registers[inst.rs2];
-
-   processor.program_counter += 4;
 }
 
 void exec_addi(const DecodedInstruction &inst, Processor &processor)
@@ -42,8 +38,6 @@ void exec_addi(const DecodedInstruction &inst, Processor &processor)
    // Adds rs1 to imm and stores in rd
    processor.registers[inst.rd] =
        processor.registers[inst.rs1] + inst.imm;
-
-   processor.program_counter += 4;
 
    DEBUG_BEGIN()
    io->writeString("ADDI x");
@@ -63,7 +57,6 @@ void exec_lw(const DecodedInstruction &inst, Processor &processor)
    uint32_t value = processor.readMemoryWord(address);
 
    processor.registers[inst.rd] = static_cast<int32_t>(value);
-   processor.program_counter += 4;
 
    DEBUG_BEGIN()
    io->writeString("LW x");
@@ -87,7 +80,6 @@ void exec_sw(const DecodedInstruction &inst, Processor &processor)
    uint32_t value = static_cast<uint32_t>(processor.registers[inst.rs2]);
 
    processor.writeMemoryWord(address, value);
-   processor.program_counter += 4;
 
    DEBUG_BEGIN()
    io->writeString("SW x");
@@ -105,11 +97,11 @@ void exec_sw(const DecodedInstruction &inst, Processor &processor)
 
 void exec_beq(const DecodedInstruction &inst, Processor &processor)
 {
-   int64_t old_pc = processor.program_counter;
+   int64_t current_pc = inst.pc;
 
    if (processor.registers[inst.rs1] == processor.registers[inst.rs2])
    {
-      processor.program_counter = static_cast<int64_t>(processor.program_counter) + inst.imm;
+      processor.program_counter = current_pc + inst.imm;
 
       DEBUG_BEGIN()
       io->writeString("BEQ x");
@@ -117,43 +109,36 @@ void exec_beq(const DecodedInstruction &inst, Processor &processor)
       io->writeString(", x");
       io->writeInt(inst.rs2);
       io->writeString(" taken -> PC: ");
-      io->writeInt(old_pc);
+      io->writeInt(current_pc);
       io->writeString(" -> ");
       io->writeInt(processor.program_counter);
       DEBUG_END()
    }
    else
    {
-      processor.program_counter += 4;
-
       DEBUG_BEGIN()
       io->writeString("BEQ x");
       io->writeInt(inst.rs1);
       io->writeString(", x");
       io->writeInt(inst.rs2);
-      io->writeString(" not taken -> PC: ");
-      io->writeInt(old_pc);
-      io->writeString(" -> ");
-      io->writeInt(processor.program_counter);
+      io->writeString(" not taken.");
       DEBUG_END()
    }
 }
 
 void exec_jal(const DecodedInstruction &inst, Processor &processor)
 {
-   int64_t old_pc = processor.program_counter;
-   processor.registers[inst.rd] = processor.program_counter + 4;
+   processor.registers[inst.rd] = inst.pc + inst.length;
 
-   int64_t current_pc = static_cast<int64_t>(processor.program_counter);
-   processor.program_counter = current_pc + inst.imm;
+   processor.program_counter = inst.pc + inst.imm;
 
    DEBUG_BEGIN()
    io->writeString("JAL x");
    io->writeInt(inst.rd);
-   io->writeString(", ");
-   io->writeSignedInt(static_cast<int64_t>(processor.program_counter) - static_cast<int64_t>(old_pc));
+   io->writeString(", offset ");
+   io->writeSignedInt(inst.imm);
    io->writeString(" (PC: ");
-   io->writeInt(old_pc);
+   io->writeInt(inst.pc);
    io->writeString(" -> ");
    io->writeInt(processor.program_counter);
    io->writeString(")");
