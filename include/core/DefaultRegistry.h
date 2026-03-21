@@ -9,6 +9,5 @@ public:
    static void register_branch_jump();
    static void register_rv64i_arithmetic();
    static void register_csr();
-   static void register_system_operations();
    static void init_default_instructions();
 };

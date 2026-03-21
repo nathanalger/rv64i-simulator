@@ -2,7 +2,15 @@
 #include "Interpreter.h"
 #include "Memory.h"
 #include "TrapCause.h"
+#include "EnvironmentDevice.h"
 #include <cstdint>
+
+enum class PrivilegeMode : uint8_t
+{
+   User = 0,
+   Supervisor = 1,
+   Machine = 3
+};
 
 /**
  * Stores the information on the processor, specifically register values and the program counter.
@@ -11,6 +19,13 @@
 class Processor
 {
 public:
+   enum class AccessType
+   {
+      LOAD,
+      STORE,
+      FETCH
+   };
+
    // Array 32 count 64-bit width registers
    uint64_t registers[32];
 
@@ -31,6 +46,19 @@ public:
    // CSR
    uint64_t csrs[4096];
    PrivilegeMode mode = PrivilegeMode::Machine;
+   uint64_t mtime = 0;
+   uint64_t mtimecmp = 0xFFFFFFFFFFFFFFFF;
+
+   bool translate(uint64_t vaddr, uint64_t &paddr, AccessType type);
+
+   uint8_t readMemoryByte(uint64_t vaddr);
+   void writeMemoryByte(uint64_t vaddr, uint8_t value);
+   uint16_t readMemoryHalf(uint64_t vaddr);
+   void writeMemoryHalf(uint64_t vaddr, uint16_t value);
+   uint32_t readMemoryWord(uint64_t vaddr);
+   void writeMemoryWord(uint64_t vaddr, uint32_t value);
+   uint64_t readMemoryDouble(uint64_t vaddr);
+   void writeMemoryDouble(uint64_t vaddr, uint64_t value);
 
    /**
     * Default constructor
@@ -68,12 +96,13 @@ public:
     */
    void writeCSR(uint16_t address, uint64_t value);
 
+   void checkInterrupts();
+
 private:
    /**
     * Initialize a processor instance
     */
    void initialize();
-   PrivilegeMode mode = PrivilegeMode::Machine;
 
    // CSR List
    // Machine-level CSRs
@@ -99,11 +128,4 @@ private:
    uint64_t stval = 0;    // Supervisor bad address or instruction
    uint64_t sip = 0;      // Supervisor interrupt pending
    uint64_t satp = 0;     // Supervisor address translation and protection (MMU)
-};
-
-enum class PrivilegeMode : uint8_t
-{
-   User = 0,
-   Supervisor = 1,
-   Machine = 3
 };

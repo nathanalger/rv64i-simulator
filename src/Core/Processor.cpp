@@ -2,7 +2,7 @@
 #include "Memory.h"
 #include "Debug.h"
 #include "IODevice.h"
-#include "Cosntants.h"
+#include "Constants.h"
 
 const uint64_t STACK_GUARD = 8;
 
@@ -45,22 +45,14 @@ bool Processor::step()
    // Store old pc to detect infinite-loop halts
    uint64_t old_pc = program_counter;
 
-   // Enforce text bounds
-   if (program_counter >= text_end)
+   uint64_t physical_pc;
+   if (!translate(program_counter, physical_pc, AccessType::FETCH))
    {
-      io->writeString("ERROR: PC out of bounds\n");
-      raiseTrap(TrapCause::INSTRUCTION_ACCESS_FAULT, program_counter);
+      return false; // Translation failed (trap already raised inside translate)
    }
 
-   // Fetch instruction
-   uint32_t instruction = memory.readWord(program_counter);
-
-   // Enforce stack size
-   if (registers[2] <= text_end + STACK_GUARD)
-   {
-      io->writeString("ERROR: Stack size exceeds lower bound!\n");
-      raiseTrap(TrapCause::STACK_SIZE_EXCEEDS_MAX, program_counter);
-   }
+   // Fetch instruction using the TRANSLATED physical address
+   uint32_t instruction = memory.readWord(physical_pc);
 
    // Send instruction to interpreter
    interpreter.handle(instruction, *this);
@@ -68,18 +60,13 @@ bool Processor::step()
    // Enforce x0 = 0
    registers[0] = 0;
 
-   // Enforce stack size (again, i know)
-   if (registers[2] <= text_end + STACK_GUARD)
-   {
-      io->writeString("ERROR: Stack size exceeds lower bound!\n");
-      raiseTrap(TrapCause::STACK_SIZE_EXCEEDS_MAX, program_counter);
-   }
-
    // Detect bare-metal halt (infinite loop to itself)
    if (program_counter == old_pc)
    {
       raiseTrap(TrapCause::NONE, program_counter);
    }
+
+   checkInterrupts();
 
    return true;
 }
@@ -107,28 +94,341 @@ void Processor::run()
    }
 }
 
-void Processor::raiseTrap(TrapCause cause, uint64_t faulting_pc)
+void Processor::raiseTrap(TrapCause cause, uint64_t trap_pc)
 {
-   writeCSR(0x341, faulting_pc);
+   // 1. Save the PC where the trap happened into mepc
+   writeCSR(0x341, trap_pc);
+
+   // 2. Write the cause to mcause
    writeCSR(0x342, static_cast<uint64_t>(cause));
 
+   // 3. Write the trap value to mtval (0x343).
+   // For now, setting it to 0 is perfectly fine. Advanced page faults use this later.
+   writeCSR(0x343, 0);
+
+   // 4. Update mstatus (0x300) to save current privilege and disable interrupts
    uint64_t mstatus = readCSR(0x300);
-   mstatus &= ~(3UL << 11);
+
+   // Extract current MIE (Machine Interrupt Enable) bit (Bit 3)
+   uint64_t mie = (mstatus & 0x8) >> 3;
+
+   // Clear MPIE (Bit 7), MIE (Bit 3), and MPP (Bits 11:12)
+   mstatus &= ~(0x80 | 0x8 | 0x1800);
+
+   // Set MPIE to the old MIE value
+   mstatus |= (mie << 7);
+
+   // Set MPP (Machine Previous Privilege) to our current mode before the trap
    mstatus |= (static_cast<uint64_t>(mode) << 11);
+
+   // Write back the updated mstatus
    writeCSR(0x300, mstatus);
 
+   // 5. Force the processor into Machine Mode to handle the trap
    mode = PrivilegeMode::Machine;
 
-   uint64_t vector_base = readCSR(0x305);
-   program_counter = vector_base & ~3UL;
+   // 6. Calculate the jump address from mtvec (0x305)
+   uint64_t mtvec = readCSR(0x305);
+   uint64_t base_address = mtvec & ~3ULL; // The top 62 bits
+   uint64_t mode_flag = mtvec & 3ULL;     // The bottom 2 bits
+
+   // If mode_flag is 1 (Vectored) AND this is an asynchronous interrupt
+   if (mode_flag == 1 && (static_cast<uint64_t>(cause) & INTERRUPT_BIT))
+   {
+      // Strip the interrupt bit to get the raw exception code, multiply by 4
+      uint64_t exception_code = static_cast<uint64_t>(cause) & ~INTERRUPT_BIT;
+      program_counter = base_address + (4 * exception_code);
+   }
+   else
+   {
+      // Direct mode: All traps jump to the exact base address
+      program_counter = base_address;
+   }
 
    DEBUG_BEGIN()
-   io->writeString("TRAP redirected to Handler at: ");
+   io->writeString("TRAP ");
+   io->writeInt(static_cast<uint64_t>(cause));
+   io->writeString(" redirected to Handler at: ");
    io->writeInt(program_counter);
    DEBUG_END()
+}
 
-   // Note: We do NOT set trap = true here anymore.
-   // Only set trap to true for fatal errors that the guest OS can't handle.
+bool Processor::translate(uint64_t vaddr, uint64_t &paddr, AccessType type)
+{
+   // 1. Machine mode usually bypasses the MMU
+   if (mode == PrivilegeMode::Machine)
+   {
+      paddr = vaddr;
+      return true;
+   }
+
+   // 2. Read SATP to check the MMU mode
+   uint64_t satp_val = readCSR(0x180);
+   uint64_t satp_mode = (satp_val & SATP_MODE_MASK) >> SATP_MODE_SHIFT;
+
+   if (satp_mode == SATP_MODE_BARE)
+   {
+      // MMU is off
+      paddr = vaddr;
+      return true;
+   }
+
+   if (satp_mode != SATP_MODE_SV39)
+   {
+      // Unsupported SATP mode
+      return false;
+   }
+
+   // --- THE PAGE WALK ALGORITHM ---
+
+   // Extract the three 9-bit Virtual Page Numbers (VPNs) and the 12-bit Offset
+   uint64_t vpn[3];
+   vpn[0] = (vaddr >> 12) & 0x1FF;
+   vpn[1] = (vaddr >> 21) & 0x1FF;
+   vpn[2] = (vaddr >> 30) & 0x1FF;
+   uint64_t offset = vaddr & 0xFFF;
+
+   // Start at the root page table (Level 2), getting the physical address from SATP
+   uint64_t a = (satp_val & SATP_PPN_MASK) * PAGE_SIZE;
+   int i = 2;
+
+   while (true)
+   {
+      // Calculate the physical address of the Page Table Entry (PTE)
+      // Each PTE is 8 bytes long.
+      uint64_t pte_addr = a + (vpn[i] * 8);
+
+      // Read 64-bit PTE (using two 32-bit reads)
+      uint64_t pte = memory.readDouble(pte_addr);
+
+      // Check if PTE is Valid. Also, Write-only pages are illegal in RISC-V.
+      if ((pte & PTE_V) == 0 || (((pte & PTE_R) == 0) && ((pte & PTE_W) == PTE_W)))
+      {
+         goto page_fault;
+      }
+
+      // Check if it's a leaf node (Read, Write, or Execute bit is set)
+      if ((pte & PTE_R) || (pte & PTE_W) || (pte & PTE_X))
+      {
+         // --- LEAF NODE FOUND ---
+
+         // 1. Basic Permission Checks
+         if (type == AccessType::FETCH && !(pte & PTE_X))
+            goto page_fault;
+         if (type == AccessType::LOAD && !(pte & PTE_R))
+            goto page_fault;
+         if (type == AccessType::STORE && !(pte & PTE_W))
+            goto page_fault;
+
+         // 2. Privilege Mode Checks
+         // User mode cannot access Supervisor pages unless U bit is set
+         if (mode == PrivilegeMode::User && !(pte & PTE_U))
+            goto page_fault;
+         // Supervisor generally can't access User pages
+         if (mode == PrivilegeMode::Supervisor && (pte & PTE_U))
+            goto page_fault;
+
+         // 3. Extract Physical Page Number from PTE
+         uint64_t pte_ppn = (pte >> PTE_PPN_SHIFT) & PTE_PPN_MASK;
+
+         // 4. Calculate final physical address
+         if (i == 0)
+         {
+            // Standard 4KB page
+            paddr = (pte_ppn * PAGE_SIZE) + offset;
+         }
+         else
+         {
+            // Superpage (2MB or 1GB)
+            uint64_t mask = (i == 1) ? 0x1FF : 0x3FFFF;
+            // Superpages require the lower bits of PPN to be zero
+            if ((pte_ppn & mask) != 0)
+               goto page_fault;
+
+            uint64_t adjusted_ppn = (pte_ppn & ~mask) | ((vaddr >> 12) & mask);
+            paddr = (adjusted_ppn * PAGE_SIZE) + offset;
+         }
+
+         return true; // Translation successful!
+      }
+      else
+      {
+         i--;
+         if (i < 0)
+         {
+            // Walked too deep, page table is corrupted
+            goto page_fault;
+         }
+         // Set 'a' to the physical address of the next page table
+         a = ((pte >> PTE_PPN_SHIFT) & PTE_PPN_MASK) * PAGE_SIZE;
+      }
+   }
+
+page_fault:
+   TrapCause cause;
+   if (type == AccessType::FETCH)
+      cause = TrapCause::INSTRUCTION_ACCESS_FAULT;
+   else if (type == AccessType::LOAD)
+      cause = TrapCause::LOAD_ACCESS_FAULT;
+   else
+      cause = TrapCause::STORE_ACCESS_FAULT;
+
+   raiseTrap(cause, vaddr);
+   return false;
+}
+
+uint8_t Processor::readMemoryByte(uint64_t vaddr)
+{
+   uint64_t paddr;
+   if (translate(vaddr, paddr, AccessType::LOAD))
+      return memory.readByte(paddr);
+   raiseTrap(TrapCause::LOAD_ACCESS_FAULT, vaddr);
+   return 0;
+}
+
+void Processor::writeMemoryByte(uint64_t vaddr, uint8_t value)
+{
+   uint64_t paddr;
+   if (translate(vaddr, paddr, AccessType::STORE))
+      memory.writeByte(paddr, value);
+   else
+      raiseTrap(TrapCause::STORE_ACCESS_FAULT, vaddr);
+}
+
+uint32_t Processor::readMemoryWord(uint64_t vaddr)
+{
+   uint64_t paddr;
+   if (translate(vaddr, paddr, AccessType::LOAD))
+   {
+      return memory.readWord(paddr);
+   }
+   else
+   {
+      raiseTrap(TrapCause::LOAD_ACCESS_FAULT, vaddr);
+      return 0;
+   }
+}
+
+uint16_t Processor::readMemoryHalf(uint64_t vaddr)
+{
+   uint64_t paddr;
+   if (translate(vaddr, paddr, AccessType::LOAD))
+   {
+      return memory.readHalf(paddr);
+   }
+   else
+   {
+      raiseTrap(TrapCause::LOAD_ACCESS_FAULT, vaddr);
+      return 0;
+   }
+}
+
+void Processor::writeMemoryHalf(uint64_t vaddr, uint16_t value)
+{
+   uint64_t paddr;
+   if (translate(vaddr, paddr, AccessType::STORE))
+   {
+      memory.writeHalf(paddr, value);
+   }
+   else
+   {
+      raiseTrap(TrapCause::STORE_ACCESS_FAULT, vaddr);
+   }
+}
+
+void Processor::writeMemoryWord(uint64_t vaddr, uint32_t value)
+{
+   uint64_t paddr;
+   if (translate(vaddr, paddr, AccessType::STORE))
+   {
+      memory.writeWord(paddr, value);
+   }
+   else
+   {
+      raiseTrap(TrapCause::STORE_ACCESS_FAULT, vaddr);
+   }
+}
+
+uint64_t Processor::readMemoryDouble(uint64_t vaddr)
+{
+   uint64_t paddr;
+   if (translate(vaddr, paddr, AccessType::LOAD))
+   {
+      // Intercept CLINT reads
+      if (paddr == CLINT_MTIME)
+         return mtime;
+      if (paddr == CLINT_MTIMECMP)
+         return mtimecmp;
+
+      return memory.readDouble(paddr);
+   }
+   raiseTrap(TrapCause::LOAD_ACCESS_FAULT, vaddr);
+   return 0;
+}
+
+void Processor::writeMemoryDouble(uint64_t vaddr, uint64_t value)
+{
+   uint64_t paddr;
+   if (translate(vaddr, paddr, AccessType::STORE))
+   {
+      // Intercept CLINT writes
+      if (paddr == CLINT_MTIMECMP)
+      {
+         mtimecmp = value;
+         // Clear the pending interrupt bit when a new compare value is written
+         mip &= ~MIP_MTIP;
+         return;
+      }
+      // Note: mtime is usually read-only to software, but some implementations allow writes.
+      // We'll leave it out for strictness unless you find your OS needs it.
+
+      memory.writeDouble(paddr, value);
+   }
+   else
+   {
+      raiseTrap(TrapCause::STORE_ACCESS_FAULT, vaddr);
+   }
+}
+
+void Processor::checkInterrupts()
+{
+   // 1. Tick the hardware clock (1 tick per instruction for now)
+   mtime++;
+
+   // 2. Pending logic: Is the timer past the compare value?
+   uint64_t mip = readCSR(0x344);
+   if (mtime >= mtimecmp)
+   {
+      // Set Machine Timer Interrupt Pending (MTIP) - Bit 7
+      writeCSR(0x344, mip | (1ULL << 7));
+   }
+   else
+   {
+      // Clear MTIP if mtimecmp was updated to the future
+      writeCSR(0x344, mip & ~(1ULL << 7));
+   }
+
+   // 3. Re-read mip just in case it changed
+   mip = readCSR(0x344);
+   uint64_t mie_reg = readCSR(0x304); // Machine Interrupt Enable Register
+   uint64_t mstatus = readCSR(0x300);
+
+   // 4. Are machine interrupts globally enabled?
+   bool m_interrupts_enabled = false;
+   if (mode == PrivilegeMode::Machine)
+   {
+      m_interrupts_enabled = (mstatus & 0x8) != 0; // Check MIE bit in mstatus
+   }
+   else
+   {
+      m_interrupts_enabled = true; // Always enabled if in a lower privilege mode
+   }
+
+   // 5. If global interrupts are on, MTIE (Enable bit 7) is on, and MTIP (Pending bit 7) is on: FIRE!
+   if (m_interrupts_enabled && (mie_reg & (1ULL << 7)) && (mip & (1ULL << 7)))
+   {
+      raiseTrap(TrapCause::MACHINE_TIMER_INTERRUPT, program_counter);
+   }
 }
 
 uint64_t Processor::readCSR(uint16_t address)

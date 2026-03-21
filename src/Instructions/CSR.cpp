@@ -3,26 +3,47 @@
 #include "Processor.h"
 #include "Debug.h"
 #include "IODevice.h"
-#include "Cosntants.h"
+#include "Constants.h"
 
-// --- Trap and Return Instructions ---
-
-void exec_ecall(const DecodedInstruction &inst, Processor &processor)
+void exec_ecall(const DecodedInstruction & /*inst*/, Processor &processor)
 {
-   DEBUG_BEGIN()
-   io->writeString("ECALL at PC: ");
-   io->writeInt(processor.program_counter);
-   DEBUG_END()
-
-   // In a full sim, this would check current privilege mode
-   // and raise the specific Environment Call trap for that mode.
-   processor.raiseTrap(TrapCause::ECALL, processor.program_counter);
-   // Note: We don't increment PC here because the trap handler will set the new PC
+   if (env != nullptr)
+   {
+      // Host environment
+      env->handle_ecall(processor);
+      processor.program_counter += 4;
+   }
+   else
+   {
+      // No host environment
+      if (processor.mode == PrivilegeMode::User)
+      {
+         processor.raiseTrap(TrapCause::ECALL_FROM_U_MODE, processor.program_counter);
+      }
+      else if (processor.mode == PrivilegeMode::Supervisor)
+      {
+         processor.raiseTrap(TrapCause::ECALL_FROM_S_MODE, processor.program_counter);
+      }
+      else
+      {
+         processor.raiseTrap(TrapCause::ECALL_FROM_M_MODE, processor.program_counter);
+      }
+   }
 }
 
-void exec_ebreak(const DecodedInstruction &inst, Processor &processor)
+void exec_ebreak(const DecodedInstruction & /*inst*/, Processor &processor)
 {
-   processor.raiseTrap(TrapCause::BREAKPOINT, processor.program_counter);
+   if (env != nullptr)
+   {
+      // Host Mode
+      env->handle_ebreak(processor);
+      processor.program_counter += 4;
+   }
+   else
+   {
+      // Core Mode
+      processor.raiseTrap(TrapCause::BREAKPOINT, processor.program_counter);
+   }
 }
 
 void exec_csrrw(const DecodedInstruction &inst, Processor &processor)
@@ -141,7 +162,7 @@ void exec_csrrci(const DecodedInstruction &inst, Processor &processor)
    processor.program_counter += 4;
 }
 
-void exec_mret(const DecodedInstruction &inst, Processor &processor)
+void exec_mret(const DecodedInstruction &, Processor &processor)
 {
    // 1. Read current mstatus
    uint64_t mstatus = processor.readCSR(0x300);
@@ -181,7 +202,7 @@ void exec_mret(const DecodedInstruction &inst, Processor &processor)
    // Notice we DO NOT increment program_counter by 4 here.
 }
 
-void exec_sret(const DecodedInstruction &inst, Processor &processor)
+void exec_sret(const DecodedInstruction &, Processor &processor)
 {
    // 1. Read current sstatus
    uint64_t sstatus = processor.readCSR(0x100);
@@ -221,13 +242,36 @@ void exec_sret(const DecodedInstruction &inst, Processor &processor)
    DEBUG_END()
 }
 
+// Add this helper function above your register_csr function
+static void exec_system_dispatch(const DecodedInstruction &inst, Processor &processor)
+{
+   // The 12-bit immediate field dictates the specific system instruction
+   switch (inst.imm)
+   {
+   case 0x000:
+      exec_ecall(inst, processor);
+      break;
+   case 0x001:
+      exec_ebreak(inst, processor);
+      break;
+   case 0x102:
+      exec_sret(inst, processor);
+      break;
+   case 0x302:
+      exec_mret(inst, processor);
+      break;
+   default:
+      // Unknown system instruction (e.g., wfi)
+      processor.raiseTrap(TrapCause::ILLEGAL_INSTRUCTION, processor.program_counter);
+      break;
+   }
+}
+
+// Update your registry function:
 void DefaultRegistry::register_csr()
 {
-   // System & Trap Instructions
-   InstructionRegistry::register_exact(0x00000073, exec_ecall);
-   InstructionRegistry::register_exact(0x00100073, exec_ebreak);
-   InstructionRegistry::register_exact(0x10200073, exec_sret);
-   InstructionRegistry::register_exact(0x30200073, exec_mret);
+   // System & Trap Instructions (Using the I-type signature)
+   InstructionRegistry::register_i(0x73, 0b000, exec_system_dispatch);
 
    // Standard CSRs (Register)
    InstructionRegistry::register_i(0x73, 0x1, exec_csrrw);

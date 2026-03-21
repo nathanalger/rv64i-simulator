@@ -220,11 +220,18 @@ static int32_t decode_j(uint32_t raw)
 bool Interpreter::handle(uint32_t raw, Processor &processor)
 {
    DecodedInstruction inst = decode(raw, processor);
+   InstructionFormat format = get_format(inst.opcode);
+
+   uint32_t lookup_funct7 = inst.funct7;
+   if (format != InstructionFormat::R)
+   {
+      lookup_funct7 = 0;
+   }
 
    uint32_t key = InstructionRegistry::make_key(
        inst.opcode,
        inst.funct3,
-       inst.funct7);
+       lookup_funct7);
 
    ExecFunc func = InstructionRegistry::lookup(key);
 
