@@ -13,7 +13,7 @@ void exec_add(const DecodedInstruction &inst, Processor &processor)
        processor.registers[inst.rs1] +
        processor.registers[inst.rs2];
 
-   DEBUG_BEGIN()
+   TRACE_BEGIN()
    io->writeString("ADD x");
    io->writeInt(inst.rd);
    io->writeString(", x");
@@ -39,7 +39,7 @@ void exec_addi(const DecodedInstruction &inst, Processor &processor)
    processor.registers[inst.rd] =
        processor.registers[inst.rs1] + inst.imm;
 
-   DEBUG_BEGIN()
+   TRACE_BEGIN()
    io->writeString("ADDI x");
    io->writeInt(inst.rd);
    io->writeString(", x");
@@ -58,7 +58,7 @@ void exec_lw(const DecodedInstruction &inst, Processor &processor)
 
    processor.registers[inst.rd] = static_cast<int32_t>(value);
 
-   DEBUG_BEGIN()
+   TRACE_BEGIN()
    io->writeString("LW x");
    io->writeInt(inst.rd);
    io->writeString(", ");
@@ -81,7 +81,7 @@ void exec_sw(const DecodedInstruction &inst, Processor &processor)
 
    processor.bus.writeWord(address, value);
 
-   DEBUG_BEGIN()
+   TRACE_BEGIN()
    io->writeString("SW x");
    io->writeInt(inst.rs2);
    io->writeString(", ");
@@ -103,7 +103,7 @@ void exec_beq(const DecodedInstruction &inst, Processor &processor)
    {
       processor.program_counter = current_pc + inst.imm;
 
-      DEBUG_BEGIN()
+      TRACE_BEGIN()
       io->writeString("BEQ x");
       io->writeInt(inst.rs1);
       io->writeString(", x");
@@ -116,7 +116,7 @@ void exec_beq(const DecodedInstruction &inst, Processor &processor)
    }
    else
    {
-      DEBUG_BEGIN()
+      TRACE_BEGIN()
       io->writeString("BEQ x");
       io->writeInt(inst.rs1);
       io->writeString(", x");
@@ -132,7 +132,7 @@ void exec_jal(const DecodedInstruction &inst, Processor &processor)
 
    processor.program_counter = inst.pc + inst.imm;
 
-   DEBUG_BEGIN()
+   TRACE_BEGIN()
    io->writeString("JAL x");
    io->writeInt(inst.rd);
    io->writeString(", offset ");

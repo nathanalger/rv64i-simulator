@@ -4,6 +4,8 @@
 #include "IODevice.h"
 #include "Constants.h"
 
+#include <cstdlib>
+
 // TODO: Memory is not currently strictly protected.
 
 const uint64_t STACK_GUARD = 8;
@@ -51,12 +53,7 @@ bool Processor::step()
    if (!translate(program_counter, physical_pc, AccessType::FETCH))
       return false;
 
-   // Save the PC before we do anything
    uint64_t pc_before_exec = program_counter;
-
-   // 2. Execute
-   // Your interpreter.handle() calls your exec_ functions
-   // Inside Processor::step()
    uint16_t first_half = bus.readHalf(physical_pc);
    uint32_t raw_instruction;
    uint8_t length;
@@ -75,12 +72,9 @@ bool Processor::step()
       length = 4;
    }
 
-   // Now handle it with the explicit length
    interpreter.handle(raw_instruction, *this, length);
+   trap_pending = false;
 
-   // 3. The Logical Check
-   // If the PC is still what it was before exec, it means this was a
-   // sequential instruction (like ADD/LW/SW) or a non-taken branch.
    if (program_counter == pc_before_exec)
    {
       program_counter += length;
@@ -116,6 +110,8 @@ void Processor::run()
 
 void Processor::raiseTrap(TrapCause cause, uint64_t trap_pc)
 {
+   trap_pending = true;
+
    // 1. Save the PC where the trap happened into mepc
    writeCSR(0x341, trap_pc);
 
@@ -449,6 +445,7 @@ void Processor::writeCSR(uint16_t address, uint64_t val)
    {
       DEBUG_BEGIN()
       io->writeString("WRITECSR TOP");
+      exit(0);
       DEBUG_END()
       raiseTrap(TrapCause::ILLEGAL_INSTRUCTION, program_counter);
       return;
@@ -461,7 +458,7 @@ void Processor::writeCSR(uint16_t address, uint64_t val)
       mstatus = val;
       break;
    case 0x301:
-      misa = val;
+      // Readonly
       break;
    case 0x302:
       medeleg = val;

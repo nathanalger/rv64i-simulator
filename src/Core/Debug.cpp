@@ -2,15 +2,26 @@
 #include "IODevice.h"
 
 bool Debug::debug = false;
+bool Debug::tr = false;
 
 bool Debug::enabled()
 {
    return debug;
 }
 
+bool Debug::trace()
+{
+   return tr;
+}
+
 void Debug::enable()
 {
    debug = true;
+}
+
+void Debug::enable_trace()
+{
+   tr = true;
 }
 
 void Debug::disable()

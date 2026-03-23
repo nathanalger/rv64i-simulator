@@ -12,7 +12,7 @@ void exec_sb(const DecodedInstruction &inst, Processor &processor)
 
    processor.bus.writeByte(address, value);
 
-   DEBUG_BEGIN()
+   TRACE_BEGIN()
    io->writeString("SB x");
    io->writeInt(inst.rs2);
    io->writeString(", ");
@@ -33,7 +33,7 @@ void exec_sh(const DecodedInstruction &inst, Processor &processor)
 
    processor.bus.writeHalf(address, value);
 
-   DEBUG_BEGIN()
+   TRACE_BEGIN()
    io->writeString("SH x");
    io->writeInt(inst.rs2);
    io->writeString(", ");
@@ -54,7 +54,7 @@ void exec_sd(const DecodedInstruction &inst, Processor &processor)
 
    processor.bus.writeDouble(address, value);
 
-   DEBUG_BEGIN()
+   TRACE_BEGIN()
    io->writeString("SD x");
    io->writeInt(inst.rs2);
    io->writeString(", ");

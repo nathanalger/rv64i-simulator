@@ -4,6 +4,9 @@
 class IO
 {
 public:
+   virtual void pause() = 0;
+   virtual void resume() = 0;
+
    virtual void writeChar(char c) = 0;
 
    virtual void writeString(const char *str)

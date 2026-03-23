@@ -10,19 +10,14 @@ static void exec_fsd(const DecodedInstruction &inst, Processor &processor)
    uint64_t addr = processor.registers[inst.rs1] + inst.imm;
    uint64_t value = processor.f_registers[inst.rs2];
 
-   // Assuming your IODevice/Bus has a writeDouble method
    processor.bus.writeDouble(addr, value);
 }
 
 static void exec_fld(const DecodedInstruction &inst, Processor &processor)
 {
    uint64_t addr = processor.registers[inst.rs1] + inst.imm;
-
-   // Read 64 bits from memory
-   // (Assuming your bus has a readDouble or read64 method)
    uint64_t value = processor.bus.readDouble(addr);
 
-   // Store it into the destination float register
    processor.f_registers[inst.rd] = value;
 }
 

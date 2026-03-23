@@ -59,7 +59,7 @@ void exec_jalr(const DecodedInstruction &inst, Processor &processor)
    // 3. Update the PC
    processor.program_counter = target;
 
-   DEBUG_BEGIN()
+   TRACE_BEGIN()
    io->writeString("JALR x");
    io->writeInt(inst.rd);
    io->writeString(", x");

@@ -5,7 +5,7 @@
 struct CLI
 {
    char *filename;
-   size_t memory_kb = 1024 * 1024;
+   size_t memory_kb = 50 * 1024;
    bool debug_enabled = false;
    bool valid = false;
 };

@@ -45,6 +45,7 @@ public:
    uint32_t memory_size;
 
    bool trap;
+   bool trap_pending = false;
    TrapCause trap_cause;
    uint64_t trap_pc;
 
@@ -106,20 +107,19 @@ private:
 
    // CSR List
    // Machine-level CSRs
-   uint64_t mstatus = 0;  // Machine status
-   uint64_t misa = 0;     // ISA and extensions
-   uint64_t medeleg = 0;  // Machine exception delegation
-   uint64_t mideleg = 0;  // Machine interrupt delegation
-   uint64_t mie = 0;      // Machine interrupt-enable
-   uint64_t mtvec = 0;    // Machine trap-handler base address
-   uint64_t mscratch = 0; // Scratch register for machine trap handlers
-   uint64_t mepc = 0;     // Machine exception program counter
-   uint64_t mcause = 0;   // Machine trap cause
-   uint64_t mtval = 0;    // Machine bad address or instruction
-   uint64_t mip = 0;      // Machine interrupt pending
+   uint64_t mstatus = 0;               // Machine status
+   uint64_t misa = 0x800000000014112D; // ISA and extensions
+   uint64_t medeleg = 0;               // Machine exception delegation
+   uint64_t mideleg = 0;               // Machine interrupt delegation
+   uint64_t mie = 0;                   // Machine interrupt-enable
+   uint64_t mtvec = 0;                 // Machine trap-handler base address
+   uint64_t mscratch = 0;              // Scratch register for machine trap handlers
+   uint64_t mepc = 0;                  // Machine exception program counter
+   uint64_t mcause = 0;                // Machine trap cause
+   uint64_t mtval = 0;                 // Machine bad address or instruction
+   uint64_t mip = 0;                   // Machine interrupt pending
 
    // Supervisor-level CSRs
-   uint64_t sstatus = 0;  // Supervisor status (technically a restricted view of mstatus)
    uint64_t sie = 0;      // Supervisor interrupt-enable
    uint64_t stvec = 0;    // Supervisor trap handler base address
    uint64_t sscratch = 0; // Scratch register for supervisor trap handlers

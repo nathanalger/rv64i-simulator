@@ -9,7 +9,6 @@ uint64_t InjectionLoader::load(Bus &bus, uint64_t start_address, const char *fil
 
    if (!file)
    {
-      // Use your IO device to report the specific file that failed
       io->writeString("Loader Error: Could not open ");
       io->writeString(filename);
       io->writeString("\n");

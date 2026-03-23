@@ -20,6 +20,8 @@ int main(int argc, char *argv[])
    io = new ConsoleIO();
    env = new WindowsEnvironment();
 
+   // Debug::enable_trace();
+
    CLI config = parseCommandLine(argc, argv);
    if (!config.valid)
       return 1;
@@ -44,9 +46,6 @@ int main(int argc, char *argv[])
    loader->load(bus, RAM_BASE, config.filename);
 
    system.boot(cpu, mem, bus);
-
-   cpu.program_counter = RAM_BASE;
-   cpu.registers[2] = mem.getSize();
 
    cpu.run();
 

@@ -4,6 +4,11 @@
 
 #define DEBUG_LOG(msg) Debug::log(__func__, msg)
 
+#define TRACE_BEGIN()  \
+   if (Debug::trace()) \
+   {                   \
+      Debug::begin(__func__);
+
 #define DEBUG_BEGIN()    \
    if (Debug::enabled()) \
    {                     \
@@ -17,7 +22,9 @@ class Debug
 {
 public:
    static bool enabled();
+   static bool trace();
    static void enable();
+   static void enable_trace();
    static void disable();
    static bool set(bool enabled);
    static void log(const char *caller, const char *message);
@@ -39,4 +46,5 @@ public:
 
 private:
    static bool debug;
+   static bool tr;
 };

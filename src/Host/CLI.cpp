@@ -1,9 +1,6 @@
 #include "CLI.h"
 #include "IODevice.h"
 
-// Assuming your global 'io' pointer is declared via extern in IODevice.h or similar.
-// If it's not, you might need: extern IODevice* io;
-
 CLI parseCommandLine(int argc, char *argv[])
 {
    CLI config;

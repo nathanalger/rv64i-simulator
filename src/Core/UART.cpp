@@ -3,13 +3,12 @@
 UART::UART(IO *io_device, uint64_t base_addr)
     : io(io_device), base_address(base_addr)
 {
-   // Initialize all registers to 0
    for (int i = 0; i < 8; i++)
    {
       registers[i] = 0;
    }
-   // LSR (Line Status Register) - Bit 5 (0x20) means TX is empty/ready to receive data
-   registers[5] = 0x20;
+   // LSR (offset 5) - Bits 5 and 6 (0x60) mean TX is completely empty and ready
+   registers[5] = 0x60;
 }
 
 bool UART::contains(uint64_t address) const
@@ -36,17 +35,27 @@ void UART::writeByte(uint64_t address, uint8_t value)
 
    if (offset == 0)
    {
-      // Offset 0: Transmitter Holding Register (THR)
-      // A write here means the CPU wants to output a character!
-      if (io)
+      // Check if DLAB (Bit 7 of LCR at offset 3) is set
+      if ((registers[3] & 0x80) != 0)
       {
-         io->writeChar(static_cast<char>(value));
+         // DLAB is 1: This is a write to the Divisor Latch Low (DLL), not a character!
+         registers[0] = value;
+      }
+      else
+      {
+         // DLAB is 0: This is a normal character write to the Transmitter Holding Register
+         if (io)
+         {
+            io->writeChar(static_cast<char>(value));
+         }
       }
    }
    else if (offset < 8)
    {
-      // Write to other config registers (LCR, IER, etc.)
-      // Advanced OS's will configure baud rates here, but we just save the value.
-      registers[offset] = value;
+      // Protect the Line Status Register (offset 5) from being overwritten by the guest
+      if (offset != 5)
+      {
+         registers[offset] = value;
+      }
    }
 }

@@ -62,11 +62,9 @@ uint16_t Bus::writeHalf(uint64_t address, uint16_t value)
 
 uint32_t Bus::readWord(uint64_t address)
 {
-   // 1. Redirect UART (now correctly returning status bits for lw)
    if (uart && uart->contains(address))
       return uart->readByte(address);
 
-   // 2. Map CLINT Memory-Mapped Registers to your Processor variables
    if (cpu)
    {
       if (address == 0x0200BFF8)
@@ -79,7 +77,6 @@ uint32_t Bus::readWord(uint64_t address)
          return (uint32_t)(cpu->mtimecmp >> 32);
    }
 
-   // 3. RAM
    if (address >= ram_base && address + 3 <= ram_base + ram.getSize())
    {
       return ram.readWord(address - ram_base);
@@ -121,7 +118,6 @@ uint64_t Bus::readDouble(uint64_t address)
 
 uint64_t Bus::writeDouble(uint64_t address, uint64_t value)
 {
-   // Important: When OpenSBI writes to mtimecmp, it's trying to set an alarm
    if (cpu && address == 0x02004000)
    {
       cpu->mtimecmp = value;

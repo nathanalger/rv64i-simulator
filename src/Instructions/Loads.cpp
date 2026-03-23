@@ -13,7 +13,7 @@ void exec_lb(const DecodedInstruction &inst, Processor &processor)
    int8_t signed_value = static_cast<int8_t>(value);
    processor.registers[inst.rd] = signed_value;
 
-   DEBUG_BEGIN()
+   TRACE_BEGIN()
    io->writeString("LB x");
    io->writeInt(inst.rd);
    io->writeString(", ");
@@ -38,7 +38,7 @@ void exec_lh(const DecodedInstruction &inst, Processor &processor)
    int16_t signed_value = static_cast<int16_t>(value);
    processor.registers[inst.rd] = signed_value;
 
-   DEBUG_BEGIN()
+   TRACE_BEGIN()
    io->writeString("LH x");
    io->writeInt(inst.rd);
    io->writeString(", ");
@@ -62,7 +62,7 @@ void exec_ld(const DecodedInstruction &inst, Processor &processor)
 
    processor.registers[inst.rd] = value;
 
-   DEBUG_BEGIN()
+   TRACE_BEGIN()
    io->writeString("LD x");
    io->writeInt(inst.rd);
    io->writeString(", ");
@@ -83,7 +83,7 @@ void exec_lbu(const DecodedInstruction &inst, Processor &processor)
 
    processor.registers[inst.rd] = static_cast<uint8_t>(value);
 
-   DEBUG_BEGIN()
+   TRACE_BEGIN()
    io->writeString("LBU x");
    io->writeInt(inst.rd);
    io->writeString(", ");
@@ -104,7 +104,7 @@ void exec_lhu(const DecodedInstruction &inst, Processor &processor)
 
    processor.registers[inst.rd] = static_cast<uint16_t>(value);
 
-   DEBUG_BEGIN()
+   TRACE_BEGIN()
    io->writeString("LHU x");
    io->writeInt(inst.rd);
    io->writeString(", ");
@@ -125,7 +125,7 @@ void exec_lwu(const DecodedInstruction &inst, Processor &processor)
 
    processor.registers[inst.rd] = static_cast<uint32_t>(value);
 
-   DEBUG_BEGIN()
+   TRACE_BEGIN()
    io->writeString("LWU x");
    io->writeInt(inst.rd);
    io->writeString(", ");
@@ -145,7 +145,7 @@ void exec_lui(const DecodedInstruction &inst, Processor &processor)
    // Load 20-bit immediate into upper 20 bits of rd, lower 12 bits = 0
    processor.registers[inst.rd] = static_cast<int64_t>(inst.imm);
 
-   DEBUG_BEGIN()
+   TRACE_BEGIN()
    io->writeString("LUI x");
    io->writeInt(inst.rd);
    io->writeString(", ");
