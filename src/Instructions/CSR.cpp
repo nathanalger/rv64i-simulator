@@ -37,6 +37,7 @@ void exec_ebreak(const DecodedInstruction &inst, Processor &processor)
 
    if (io)
    {
+      Debug::dump();
       io->pause();
    }
 }

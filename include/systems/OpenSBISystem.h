@@ -26,7 +26,7 @@ public:
 
       cpu.program_counter = getRamBase();
 
-      cpu.writeCSR(0x301, (2ULL << 62) | (1 << 12) | (1 << 8) | (1 << 2) | (1 << 0));
+      cpu.writeCSR(0x301, (2ULL << 62) | (1 << 0) | (1 << 3) | (1 << 5) | (1 << 8) | (1 << 12) | (1 << 18) | (1 << 20));
       cpu.writeCSR(0x300, (3ULL << 11));
       cpu.writeCSR(0x3A0, 0x1F);
       cpu.writeCSR(0x3B0, 0xFFFFFFFFFFFFFFFFULL);
