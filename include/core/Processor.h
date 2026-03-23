@@ -86,6 +86,7 @@ public:
    void raiseTrap(TrapCause cause, uint64_t pc);
 
    uint32_t decompress(uint16_t instr);
+   uint32_t fetchInstruction(uint64_t vaddr);
 
    /**
     * Read a Control & Status Register (CSR) value
@@ -118,6 +119,11 @@ private:
    uint64_t mcause = 0;                // Machine trap cause
    uint64_t mtval = 0;                 // Machine bad address or instruction
    uint64_t mip = 0;                   // Machine interrupt pending
+   uint64_t mcounteren = 0;
+   uint64_t scounteren = 0;
+   uint64_t menvcfg = 0;
+   uint64_t senvcfg = 0;
+   uint64_t fcsr = 0;
 
    // Supervisor-level CSRs
    uint64_t sie = 0;      // Supervisor interrupt-enable

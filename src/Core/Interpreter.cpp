@@ -75,14 +75,17 @@ InstructionType Interpreter::interpret(uint32_t instruction)
       break;
    }
 
-   case 0x27:
-      if (funct3 == 3)
-         return InstructionType::FSD;
-      break;
+   case 0x53:
+      return InstructionType::OP_FP;
 
    case 0x07:
       if (funct3 == 3)
          return InstructionType::FLD;
+      break;
+
+   case 0x27: // FSD (Already in your code)
+      if (funct3 == 3)
+         return InstructionType::FSD;
       break;
 
    case 0x1B:
@@ -98,15 +101,46 @@ InstructionType Interpreter::interpret(uint32_t instruction)
       }
       break;
 
-   case 0x73:
+   case 0x73: // SYSTEM / CSR instructions
       if (funct3 == 0)
       {
          uint32_t imm12 = instruction >> 20;
-
-         if (imm12 == 0)
+         switch (imm12)
+         {
+         case 0x000:
             return InstructionType::ECALL;
-         if (imm12 == 1)
+         case 0x001:
             return InstructionType::EBREAK;
+         case 0x302:
+            return InstructionType::MRET; // Machine Return (Crucial!)
+         case 0x102:
+            return InstructionType::SRET; // Supervisor Return
+         case 0x105:
+            return InstructionType::WFI; // Wait for Interrupt
+         default:
+            return InstructionType::UNKNOWN;
+         }
+      }
+      else
+      {
+         // CSR Access Instructions
+         switch (funct3)
+         {
+         case 1:
+            return InstructionType::CSRRW;
+         case 2:
+            return InstructionType::CSRRS;
+         case 3:
+            return InstructionType::CSRRC;
+         case 5:
+            return InstructionType::CSRRWI;
+         case 6:
+            return InstructionType::CSRRSI;
+         case 7:
+            return InstructionType::CSRRCI;
+         default:
+            return InstructionType::UNKNOWN;
+         }
       }
       break;
    }
@@ -291,7 +325,7 @@ bool Interpreter::handle(uint32_t raw, Processor &processor, uint8_t length)
    else
    {
       DEBUG_BEGIN()
-      io->writeString("LOOKUP RETURNED NULL");
+      io->writeString("INSTRUCTION LOOKUP RETURNED NULL");
       DEBUG_END()
       processor.raiseTrap(TrapCause::ILLEGAL_INSTRUCTION, inst.pc);
    }

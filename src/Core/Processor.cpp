@@ -8,6 +8,35 @@
 
 // TODO: Memory is not currently strictly protected.
 
+struct CSRRange
+{
+   uint16_t start;
+   uint16_t end;
+};
+
+const CSRRange PROBE_SHIELD[] = {
+    {0x107, 0x11F}, // S-Mode Configs (includes 268/0x10C)
+    {0x307, 0x31F}, // M-Mode Configs (includes 780/0x30C)
+    {0x345, 0x34F}, // M-Mode Extra Traps
+    {0x3A0, 0x3EF}, // PMP (Physical Memory Protection)
+    {0x600, 0x7FF}, // Hypervisor & Custom Extensions
+    {0xDA0, 0xDBF}, // Scalar Crypto / Entropy
+    {0xFB0, 0xFBF}, // Debug / Trigger Context
+    {0xC00, 0xC1F}, // User-mode Performance Counters
+    {0xF00, 0xF10}};
+
+bool isOptionalProbe(uint16_t address)
+{
+   if (address == 0x14D)
+      return true; // Single outlier: Count Overflow
+   for (const auto &range : PROBE_SHIELD)
+   {
+      if (address >= range.start && address <= range.end)
+         return true;
+   }
+   return false;
+}
+
 const uint64_t STACK_GUARD = 8;
 
 Processor::Processor(Bus &b) : bus(b)
@@ -111,42 +140,51 @@ void Processor::run()
 void Processor::raiseTrap(TrapCause cause, uint64_t trap_pc)
 {
    trap_pending = true;
-
-   // 1. Save the PC where the trap happened into mepc
    writeCSR(0x341, trap_pc);
-
-   // 2. Write the cause to mcause
    writeCSR(0x342, static_cast<uint64_t>(cause));
 
-   // 3. Write the trap value to mtval (0x343).
-   // For now, setting it to 0 is perfectly fine. Advanced page faults use this later.
-   writeCSR(0x343, 0);
+   uint64_t trap_value = 0;
+   if (cause == TrapCause::ILLEGAL_INSTRUCTION)
+   {
+      uint16_t first = bus.readHalf(trap_pc);
+      if ((first & 0x3) != 0x3)
+      {
+         trap_value = first; // 16-bit compressed
+      }
+      else
+      {
+         uint16_t second = bus.readHalf(trap_pc + 2);
+         trap_value = (static_cast<uint32_t>(second) << 16) | first;
+      }
+   }
+
+   writeCSR(0x343, trap_value);
 
    // 4. Update mstatus (0x300) to save current privilege and disable interrupts
-   uint64_t mstatus = readCSR(0x300);
+   uint64_t current_mstatus = readCSR(0x300);
 
    // Extract current MIE (Machine Interrupt Enable) bit (Bit 3)
-   uint64_t mie = (mstatus & 0x8) >> 3;
+   uint64_t mie = (current_mstatus & 0x8) >> 3;
 
    // Clear MPIE (Bit 7), MIE (Bit 3), and MPP (Bits 11:12)
-   mstatus &= ~(0x80 | 0x8 | 0x1800);
+   current_mstatus &= ~(0x80 | 0x8 | 0x1800);
 
    // Set MPIE to the old MIE value
-   mstatus |= (mie << 7);
+   current_mstatus |= (mie << 7);
 
    // Set MPP (Machine Previous Privilege) to our current mode before the trap
-   mstatus |= (static_cast<uint64_t>(mode) << 11);
+   current_mstatus |= (static_cast<uint64_t>(mode) << 11);
 
    // Write back the updated mstatus
-   writeCSR(0x300, mstatus);
+   writeCSR(0x300, current_mstatus);
 
    // 5. Force the processor into Machine Mode to handle the trap
    mode = PrivilegeMode::Machine;
 
    // 6. Calculate the jump address from mtvec (0x305)
-   uint64_t mtvec = readCSR(0x305);
-   uint64_t base_address = mtvec & ~3ULL; // The top 62 bits
-   uint64_t mode_flag = mtvec & 3ULL;     // The bottom 2 bits
+   uint64_t current_mtvec = readCSR(0x305);
+   uint64_t base_address = current_mtvec & ~3ULL; // The top 62 bits
+   uint64_t mode_flag = current_mtvec & 3ULL;     // The bottom 2 bits
 
    // If mode_flag is 1 (Vectored) AND this is an asynchronous interrupt
    if (mode_flag == 1 && (static_cast<uint64_t>(cause) & INTERRUPT_BIT))
@@ -161,15 +199,13 @@ void Processor::raiseTrap(TrapCause cause, uint64_t trap_pc)
       program_counter = base_address;
    }
 
-   uint32_t failing_instr = bus.readWord(trap_pc);
-
    DEBUG_BEGIN()
    io->writeString("TRAP ");
    io->writeInt(static_cast<uint64_t>(cause));
    io->writeString(" at PC: ");
    io->writeInt(trap_pc);
-   io->writeString(" | Raw Instr: ");
-   io->writeInt(failing_instr);
+   io->writeString(" | Raw Instr/Tval: ");
+   io->writeInt(trap_value);
    io->writeString(" | Redirected to: ");
    io->writeInt(program_counter);
    DEBUG_END()
@@ -378,6 +414,12 @@ uint64_t Processor::readCSR(uint16_t address)
    case 0x344:
       return mip;
 
+   case 0xC00: // cycle
+   case 0xB00: // mcycle
+   case 0xC02: // instret
+   case 0xB02: // minstret
+      return step_count;
+
       // Machine Information
    case 0xF11:
       return 0; // mvendorid
@@ -387,14 +429,18 @@ uint64_t Processor::readCSR(uint16_t address)
       return 0; // mimpid
    case 0xF14:
       return 0; // mhartid (Current CPU ID)
-
-   // Counters
-   case 0xC00: // cycle
-   case 0xB00: // mcycle
-      return step_count;
+   case 0x306:
+      return mcounteren;
 
    case 0xC01:                 // time
       return step_count / 100; // Simplified scaling
+
+   case 0x001:
+      return fcsr & 0x1F; // fflags
+   case 0x002:
+      return (fcsr >> 5) & 0x7; // frm
+   case 0x003:
+      return fcsr & 0xFF; // fcsr (flags + frm)
 
    // Supervisor
    case 0x100:
@@ -415,21 +461,28 @@ uint64_t Processor::readCSR(uint16_t address)
       return sip;
    case 0x180:
       return satp;
+   case 0x106:
+      return scounteren;
+   case 0x30A: // menvcfg
+      return menvcfg;
+   case 0x10A: // senvcfg
+      return senvcfg;
+
+   case 0xB03 ... 0xB1F: // mhpmcounter3 to mhpmcounter31
+      return 0;
+   case 0x320 ... 0x33F: // mhpmevent3 to mhpmevent31
+      return 0;
 
    default:
-      // PMP Configuration Registers (0x3A0 - 0x3AF)
-      if (address >= 0x3A0 && address <= 0x3AF)
+      if (isOptionalProbe(address))
       {
-         return pmpcfg[address - 0x3A0];
-      }
-      // PMP Address Registers (0x3B0 - 0x3EF)
-      if (address >= 0x3B0 && address <= 0x3EF)
-      {
-         return pmpaddr[address - 0x3B0];
+         return 0;
       }
 
       DEBUG_BEGIN()
-      io->writeString("READCSR BOTTOM");
+      io->writeString("READCSR BOTTOM - Unimplemented CSR: ");
+      io->writeInt(address);
+      io->writeString("\n");
       DEBUG_END()
 
       // If we get here, it's a truly unimplemented CSR.
@@ -487,6 +540,15 @@ void Processor::writeCSR(uint16_t address, uint64_t val)
    case 0x344:
       mip = val;
       break;
+   case 0x306:
+      mcounteren = val;
+      return;
+   case 0x30A:
+      menvcfg = val;
+      break;
+   case 0x10A:
+      senvcfg = val;
+      break;
 
    // Supervisor
    case 0x100:
@@ -516,25 +578,37 @@ void Processor::writeCSR(uint16_t address, uint64_t val)
    case 0x180:
       satp = val;
       break;
+   case 0x106:
+      scounteren = val;
+      return;
+
+   case 0x001:
+      fcsr = (fcsr & ~0x1F) | (val & 0x1F);
+      break;
+   case 0x002:
+      fcsr = (fcsr & ~0xE0) | ((val & 0x7) << 5);
+      break;
+   case 0x003:
+      fcsr = val & 0xFF;
+      break;
+
+   case 0xB03 ... 0xB1F: // mhpmcounter3 to mhpmcounter31
+   case 0x320 ... 0x33F: // mhpmevent3 to mhpmevent31
+      return;
 
    default:
-      // PMP Configuration Registers (0x3A0 - 0x3AF)
-      if (address >= 0x3A0 && address <= 0x3AF)
+      if (isOptionalProbe(address))
       {
-         pmpcfg[address - 0x3A0] = val;
-         return;
-      }
-      // PMP Address Registers (0x3B0 - 0x3EF)
-      if (address >= 0x3B0 && address <= 0x3EF)
-      {
-         pmpaddr[address - 0x3B0] = val;
          return;
       }
 
       // If we get here, it's a truly unimplemented CSR.
       DEBUG_BEGIN()
-      io->writeString("WRITECSR BOTTOM");
+      io->writeString("WRITECSR BOTTOM - Unimplemented CSR: ");
+      io->writeInt(address);
+      io->writeString("\n");
       DEBUG_END()
+
       raiseTrap(TrapCause::ILLEGAL_INSTRUCTION, program_counter);
       break;
    }

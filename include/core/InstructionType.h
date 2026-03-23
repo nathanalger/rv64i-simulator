@@ -25,6 +25,18 @@ enum class InstructionType
    SRAIW,
    SRLIW,
 
+   OP_FP,
+
+   MRET,
+   SRET,
+   WFI,
+   CSRRW,
+   CSRRS,
+   CSRRC,
+   CSRRWI,
+   CSRRSI,
+   CSRRCI,
+
    FSD,
    FLD,
 
