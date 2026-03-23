@@ -8,7 +8,7 @@
 void exec_lb(const DecodedInstruction &inst, Processor &processor)
 {
    uint64_t address = processor.registers[inst.rs1] + inst.imm;
-   uint8_t value = processor.readMemoryByte(address);
+   uint8_t value = processor.bus.readByte(address);
 
    int8_t signed_value = static_cast<int8_t>(value);
    processor.registers[inst.rd] = signed_value;
@@ -33,7 +33,7 @@ void exec_lb(const DecodedInstruction &inst, Processor &processor)
 void exec_lh(const DecodedInstruction &inst, Processor &processor)
 {
    uint64_t address = processor.registers[inst.rs1] + inst.imm;
-   uint16_t value = processor.readMemoryHalf(address);
+   uint16_t value = processor.bus.readHalf(address);
 
    int16_t signed_value = static_cast<int16_t>(value);
    processor.registers[inst.rd] = signed_value;
@@ -58,7 +58,7 @@ void exec_lh(const DecodedInstruction &inst, Processor &processor)
 void exec_ld(const DecodedInstruction &inst, Processor &processor)
 {
    uint64_t address = processor.registers[inst.rs1] + inst.imm;
-   uint64_t value = processor.readMemoryDouble(address);
+   uint64_t value = processor.bus.readDouble(address);
 
    processor.registers[inst.rd] = value;
 
@@ -79,7 +79,7 @@ void exec_ld(const DecodedInstruction &inst, Processor &processor)
 void exec_lbu(const DecodedInstruction &inst, Processor &processor)
 {
    uint64_t address = processor.registers[inst.rs1] + inst.imm;
-   uint8_t value = processor.readMemoryByte(address);
+   uint8_t value = processor.bus.readByte(address);
 
    processor.registers[inst.rd] = static_cast<uint8_t>(value);
 
@@ -100,7 +100,7 @@ void exec_lbu(const DecodedInstruction &inst, Processor &processor)
 void exec_lhu(const DecodedInstruction &inst, Processor &processor)
 {
    uint64_t address = processor.registers[inst.rs1] + inst.imm;
-   uint16_t value = processor.readMemoryHalf(address);
+   uint16_t value = processor.bus.readHalf(address);
 
    processor.registers[inst.rd] = static_cast<uint16_t>(value);
 
@@ -121,7 +121,7 @@ void exec_lhu(const DecodedInstruction &inst, Processor &processor)
 void exec_lwu(const DecodedInstruction &inst, Processor &processor)
 {
    uint64_t address = processor.registers[inst.rs1] + inst.imm;
-   uint32_t value = processor.readMemoryWord(address);
+   uint32_t value = processor.bus.readWord(address);
 
    processor.registers[inst.rd] = static_cast<uint32_t>(value);
 

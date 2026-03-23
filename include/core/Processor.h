@@ -58,15 +58,6 @@ public:
 
    bool translate(uint64_t vaddr, uint64_t &paddr, AccessType type);
 
-   uint8_t readMemoryByte(uint64_t vaddr);
-   void writeMemoryByte(uint64_t vaddr, uint8_t value);
-   uint16_t readMemoryHalf(uint64_t vaddr);
-   void writeMemoryHalf(uint64_t vaddr, uint16_t value);
-   uint32_t readMemoryWord(uint64_t vaddr);
-   void writeMemoryWord(uint64_t vaddr, uint32_t value);
-   uint64_t readMemoryDouble(uint64_t vaddr);
-   void writeMemoryDouble(uint64_t vaddr, uint64_t value);
-
    /**
     * Default constructor
     * Creates processor with default memory size (1 MB)

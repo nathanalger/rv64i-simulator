@@ -12,7 +12,7 @@
 void exec_lr_w(const DecodedInstruction &inst, Processor &processor)
 {
    uint64_t addr = processor.registers[inst.rs1];
-   uint32_t val = processor.readMemoryWord(addr);
+   uint32_t val = processor.bus.readWord(addr);
 
    processor.load_reservation = addr;
    processor.reservation_valid = true;
@@ -27,7 +27,7 @@ void exec_sc_w(const DecodedInstruction &inst, Processor &processor)
 
    if (processor.reservation_valid && processor.load_reservation == addr)
    {
-      processor.writeMemoryWord(addr, (uint32_t)processor.registers[inst.rs2]);
+      processor.bus.writeWord(addr, (uint32_t)processor.registers[inst.rs2]);
       processor.registers[inst.rd] = 0; // 0 indicates success
    }
    else
@@ -42,7 +42,7 @@ void exec_sc_w(const DecodedInstruction &inst, Processor &processor)
 void exec_lr_d(const DecodedInstruction &inst, Processor &processor)
 {
    uint64_t addr = processor.registers[inst.rs1];
-   uint64_t val = processor.readMemoryDouble(addr);
+   uint64_t val = processor.bus.readDouble(addr);
 
    processor.load_reservation = addr;
    processor.reservation_valid = true;
@@ -56,7 +56,7 @@ void exec_sc_d(const DecodedInstruction &inst, Processor &processor)
 
    if (processor.reservation_valid && processor.load_reservation == addr)
    {
-      processor.writeMemoryDouble(addr, processor.registers[inst.rs2]);
+      processor.bus.writeDouble(addr, processor.registers[inst.rs2]);
       processor.registers[inst.rd] = 0;
    }
    else
@@ -76,10 +76,10 @@ void exec_sc_d(const DecodedInstruction &inst, Processor &processor)
    void exec_##name##_w(const DecodedInstruction &inst, Processor &processor) \
    {                                                                          \
       uint64_t addr = processor.registers[inst.rs1];                          \
-      type old_val = (type)processor.readMemoryWord(addr);                    \
+      type old_val = (type)processor.bus.readWord(addr);                      \
       type src_val = (type)processor.registers[inst.rs2];                     \
       type new_val = op;                                                      \
-      processor.writeMemoryWord(addr, (uint32_t)new_val);                     \
+      processor.bus.writeWord(addr, (uint32_t)new_val);                       \
       processor.registers[inst.rd] = (int64_t)(int32_t)old_val;               \
    }
 
@@ -88,10 +88,10 @@ void exec_sc_d(const DecodedInstruction &inst, Processor &processor)
    void exec_##name##_d(const DecodedInstruction &inst, Processor &processor) \
    {                                                                          \
       uint64_t addr = processor.registers[inst.rs1];                          \
-      type old_val = (type)processor.readMemoryDouble(addr);                  \
+      type old_val = (type)processor.bus.readDouble(addr);                    \
       type src_val = (type)processor.registers[inst.rs2];                     \
       type new_val = op;                                                      \
-      processor.writeMemoryDouble(addr, (uint64_t)new_val);                   \
+      processor.bus.writeDouble(addr, (uint64_t)new_val);                     \
       processor.registers[inst.rd] = (uint64_t)old_val;                       \
    }
 

@@ -4,6 +4,7 @@
 #include "UART.h"
 #include <cstdint>
 
+class Processor;
 class Bus
 {
 private:
@@ -11,6 +12,7 @@ private:
    IO *io;
    uint64_t ram_base;
    UART *uart;
+   Processor *cpu;
 
 public:
    Bus(Memory &ram_ref, IO *io_ptr, uint64_t base_address, UART *uart_ptr = nullptr);
@@ -26,6 +28,8 @@ public:
 
    uint64_t readDouble(uint64_t address);
    uint64_t writeDouble(uint64_t address, uint64_t value);
+
+   void setProcessor(Processor *p);
 
    // Helper so the Loader and CPU know where RAM lives
    uint64_t getRamBase() const { return ram_base; }

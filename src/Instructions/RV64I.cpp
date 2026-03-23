@@ -54,7 +54,7 @@ void exec_lw(const DecodedInstruction &inst, Processor &processor)
    // lw rd,offset(rs1)
    // Fetches a 32-bit word from memory address of rs1 + offset, stores in rd
    uint64_t address = processor.registers[inst.rs1] + inst.imm;
-   uint32_t value = processor.readMemoryWord(address);
+   uint32_t value = processor.bus.readWord(address);
 
    processor.registers[inst.rd] = static_cast<int32_t>(value);
 
@@ -79,7 +79,7 @@ void exec_sw(const DecodedInstruction &inst, Processor &processor)
    uint64_t address = processor.registers[inst.rs1] + inst.imm;
    uint32_t value = static_cast<uint32_t>(processor.registers[inst.rs2]);
 
-   processor.writeMemoryWord(address, value);
+   processor.bus.writeWord(address, value);
 
    DEBUG_BEGIN()
    io->writeString("SW x");

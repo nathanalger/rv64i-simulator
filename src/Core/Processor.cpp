@@ -37,6 +37,8 @@ void Processor::initialize()
    // Reset program counter
    program_counter = 0;
    trap = false;
+
+   bus.setProcessor(this);
 };
 
 /**
@@ -44,6 +46,7 @@ void Processor::initialize()
  */
 bool Processor::step()
 {
+   mtime++;
    uint64_t physical_pc;
    if (!translate(program_counter, physical_pc, AccessType::FETCH))
       return false;
@@ -300,119 +303,6 @@ page_fault:
    return false;
 }
 
-uint8_t Processor::readMemoryByte(uint64_t vaddr)
-{
-   uint64_t paddr;
-   if (translate(vaddr, paddr, AccessType::LOAD))
-      return bus.readByte(paddr);
-   raiseTrap(TrapCause::LOAD_ACCESS_FAULT, vaddr);
-   return 0;
-}
-
-void Processor::writeMemoryByte(uint64_t vaddr, uint8_t value)
-{
-   uint64_t paddr;
-   if (translate(vaddr, paddr, AccessType::STORE))
-      bus.writeByte(paddr, value);
-   else
-      raiseTrap(TrapCause::STORE_ACCESS_FAULT, vaddr);
-}
-
-uint32_t Processor::readMemoryWord(uint64_t vaddr)
-{
-   uint64_t paddr;
-   if (translate(vaddr, paddr, AccessType::LOAD))
-   {
-      return bus.readWord(paddr);
-   }
-   else
-   {
-      raiseTrap(TrapCause::LOAD_ACCESS_FAULT, vaddr);
-      return 0;
-   }
-}
-
-uint16_t Processor::readMemoryHalf(uint64_t vaddr)
-{
-   uint64_t paddr;
-   if (translate(vaddr, paddr, AccessType::LOAD))
-   {
-      return bus.readHalf(paddr);
-   }
-   else
-   {
-      raiseTrap(TrapCause::LOAD_ACCESS_FAULT, vaddr);
-      return 0;
-   }
-}
-
-void Processor::writeMemoryHalf(uint64_t vaddr, uint16_t value)
-{
-   uint64_t paddr;
-   if (translate(vaddr, paddr, AccessType::STORE))
-   {
-      bus.writeHalf(paddr, value);
-   }
-   else
-   {
-      raiseTrap(TrapCause::STORE_ACCESS_FAULT, vaddr);
-   }
-}
-
-void Processor::writeMemoryWord(uint64_t vaddr, uint32_t value)
-{
-   uint64_t paddr;
-   if (translate(vaddr, paddr, AccessType::STORE))
-   {
-      bus.writeWord(paddr, value);
-   }
-   else
-   {
-      raiseTrap(TrapCause::STORE_ACCESS_FAULT, vaddr);
-   }
-}
-
-uint64_t Processor::readMemoryDouble(uint64_t vaddr)
-{
-   uint64_t paddr;
-   if (translate(vaddr, paddr, AccessType::LOAD))
-   {
-      // Intercept CLINT reads
-      if (paddr == CLINT_MTIME)
-         return mtime;
-      if (paddr == CLINT_MTIMECMP)
-         return mtimecmp;
-
-      return bus.readDouble(paddr);
-   }
-   raiseTrap(TrapCause::LOAD_ACCESS_FAULT, vaddr);
-   return 0;
-}
-
-void Processor::writeMemoryDouble(uint64_t vaddr, uint64_t value)
-{
-   uint64_t paddr;
-   if (translate(vaddr, paddr, AccessType::STORE))
-   {
-      // Intercept CLINT writes
-      if (paddr == CLINT_MTIMECMP)
-      {
-         mtimecmp = value;
-         // Clear the pending interrupt bit when a new compare value is written
-         mip &= ~MIP_MTIP;
-         return;
-      }
-      // Note: mtime is usually read-only to software, but some implementations allow writes.
-      // We'll leave it out for strictness unless you find your OS needs it.
-
-      bus.writeDouble(paddr, value);
-   }
-   else
-   {
-      raiseTrap(TrapCause::STORE_ACCESS_FAULT, vaddr);
-   }
-}
-
 void Processor::checkInterrupts()
 {
    // 1. Tick the hardware clock (1 tick per instruction for now)
@@ -459,6 +349,9 @@ uint64_t Processor::readCSR(uint16_t address)
    uint32_t privilege_required = (address >> 8) & 0x3;
    if (static_cast<uint32_t>(mode) < privilege_required)
    {
+      DEBUG_BEGIN()
+      io->writeString("READCSR TOP");
+      DEBUG_END()
       raiseTrap(TrapCause::ILLEGAL_INSTRUCTION, program_counter);
       return 0;
    }
@@ -539,6 +432,10 @@ uint64_t Processor::readCSR(uint16_t address)
          return pmpaddr[address - 0x3B0];
       }
 
+      DEBUG_BEGIN()
+      io->writeString("READCSR BOTTOM");
+      DEBUG_END()
+
       // If we get here, it's a truly unimplemented CSR.
       raiseTrap(TrapCause::ILLEGAL_INSTRUCTION, program_counter);
       return 0;
@@ -550,6 +447,9 @@ void Processor::writeCSR(uint16_t address, uint64_t val)
    uint32_t privilege_required = (address >> 8) & 0x3;
    if (static_cast<uint32_t>(mode) < privilege_required)
    {
+      DEBUG_BEGIN()
+      io->writeString("WRITECSR TOP");
+      DEBUG_END()
       raiseTrap(TrapCause::ILLEGAL_INSTRUCTION, program_counter);
       return;
    }
@@ -635,6 +535,9 @@ void Processor::writeCSR(uint16_t address, uint64_t val)
       }
 
       // If we get here, it's a truly unimplemented CSR.
+      DEBUG_BEGIN()
+      io->writeString("WRITECSR BOTTOM");
+      DEBUG_END()
       raiseTrap(TrapCause::ILLEGAL_INSTRUCTION, program_counter);
       break;
    }

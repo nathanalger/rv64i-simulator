@@ -271,6 +271,10 @@ bool Interpreter::handle(uint32_t raw, Processor &processor, uint8_t length)
       {
          lookup_funct7 = 0;
       }
+      else
+      {
+         lookup_funct7 &= ~0x01;
+      }
    }
 
    uint32_t key = InstructionRegistry::make_key(
@@ -286,7 +290,9 @@ bool Interpreter::handle(uint32_t raw, Processor &processor, uint8_t length)
    }
    else
    {
-      // ... same error logging as before ...
+      DEBUG_BEGIN()
+      io->writeString("LOOKUP RETURNED NULL");
+      DEBUG_END()
       processor.raiseTrap(TrapCause::ILLEGAL_INSTRUCTION, inst.pc);
    }
 

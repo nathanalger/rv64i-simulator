@@ -18,6 +18,12 @@ public:
 
    void boot(Processor &cpu, Memory &mem, Bus &bus)
    {
+      DEBUG_BEGIN()
+      io->writeString("Booting with ");
+      io->writeInt(mem.getSize());
+      io->writeString(" bytes of virtual memory.");
+      DEBUG_END()
+
       cpu.program_counter = getRamBase();
 
       cpu.writeCSR(0x301, (2ULL << 62) | (1 << 12) | (1 << 8) | (1 << 2) | (1 << 0));
@@ -32,14 +38,11 @@ public:
       uint64_t dtb_address = getRamBase() + mem.getSize() - (1024 * 1024);
       cpu.registers[11] = dtb_address;
 
-      const char *sysfilename = "system.dtb";
-      if (loader->load(bus, dtb_address, sysfilename))
+      uint64_t next_addr = loader->load(bus, dtb_address, "system.dtb");
+
+      if (next_addr == 0)
       {
-         uint64_t next_addr = loader->load(bus, dtb_address, "system.dtb");
-         if (next_addr == 0)
-         {
-            // Log: "Failed to load DTB!"
-         }
+         io->writeString("Failed to load DTB.");
       }
    }
 };

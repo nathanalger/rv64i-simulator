@@ -182,6 +182,9 @@ static void exec_system_dispatch(const DecodedInstruction &inst, Processor &proc
    case 0x105: /* WFI - Usually a NOP in basic emulators */
       break;
    default:
+      DEBUG_BEGIN()
+      io->writeString("UNIMPLEMENTED CSR");
+      DEBUG_END()
       processor.raiseTrap(TrapCause::ILLEGAL_INSTRUCTION, inst.pc);
       break;
    }

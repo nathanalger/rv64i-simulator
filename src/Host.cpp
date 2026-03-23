@@ -31,7 +31,7 @@ int main(int argc, char *argv[])
 
    InstructionRegistry::init();
 
-   DefaultSystem system;
+   OpenSBISystem system;
    const uint64_t RAM_BASE = system.getRamBase();
 
    Memory mem(config.memory_kb * 1024);
