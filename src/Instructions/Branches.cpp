@@ -54,18 +54,18 @@ void exec_jalr(const DecodedInstruction &inst, Processor &processor)
 
    // 2. Link register stores the address of the NEXT instruction
    // We use inst.length (2 or 4) to handle compressed JALR expansions correctly
-   processor.registers[inst.rd] = inst.pc + inst.length;
+   processor.write_reg(inst.rd, inst.pc + inst.length);
 
    // 3. Update the PC
    processor.program_counter = target;
 
    TRACE_BEGIN()
-   io->writeString("JALR x");
-   io->writeInt(inst.rd);
-   io->writeString(", x");
-   io->writeInt(inst.rs1);
-   io->writeString(" -> PC: ");
-   io->writeInt(processor.program_counter);
+   Debug::writeString("JALR x");
+   Debug::writeInt(inst.rd);
+   Debug::writeString(", x");
+   Debug::writeInt(inst.rs1);
+   Debug::writeString(" -> PC: ");
+   Debug::writeInt(processor.program_counter);
    DEBUG_END()
 }
 

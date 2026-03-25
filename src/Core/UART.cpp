@@ -38,8 +38,7 @@ void UART::writeByte(uint64_t address, uint8_t value)
       // Check if DLAB (Bit 7 of LCR at offset 3) is set
       if ((registers[3] & 0x80) != 0)
       {
-         // DLAB is 1: This is a write to the Divisor Latch Low (DLL), not a character!
-         registers[0] = value;
+         return;
       }
       else
       {

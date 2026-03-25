@@ -39,6 +39,14 @@ bool isOptionalProbe(uint16_t address)
 
 const uint64_t STACK_GUARD = 8;
 
+void Processor::write_reg(uint8_t rd, uint64_t value)
+{
+   if (rd != 0)
+   {
+      registers[rd] = value;
+   }
+}
+
 Processor::Processor(Bus &b) : bus(b)
 {
    initialize();
@@ -49,7 +57,7 @@ void Processor::reset()
    // Set all registers to a low state
    for (int i = 0; i < 32; i++)
    {
-      registers[i] = 0;
+      write_reg(i, 0);
    }
 
    // Reset program counter
@@ -62,7 +70,7 @@ void Processor::initialize()
    // Set all registers to a low state
    for (int i = 0; i < 32; i++)
    {
-      registers[i] = 0;
+      write_reg(i, 0);
    }
 
    // Reset program counter
@@ -78,6 +86,7 @@ void Processor::initialize()
 bool Processor::step()
 {
    mtime++;
+   write_reg(0, 0);
    uint64_t physical_pc;
    if (!translate(program_counter, physical_pc, AccessType::FETCH))
       return false;
@@ -109,7 +118,7 @@ bool Processor::step()
       program_counter += length;
    }
    step_count++;
-   registers[0] = 0;
+   write_reg(0, 0);
    return true;
 }
 
@@ -200,14 +209,14 @@ void Processor::raiseTrap(TrapCause cause, uint64_t trap_pc)
    }
 
    DEBUG_BEGIN()
-   io->writeString("TRAP ");
-   io->writeInt(static_cast<uint64_t>(cause));
-   io->writeString(" at PC: ");
-   io->writeInt(trap_pc);
-   io->writeString(" | Raw Instr/Tval: ");
-   io->writeInt(trap_value);
-   io->writeString(" | Redirected to: ");
-   io->writeInt(program_counter);
+   Debug::writeString("TRAP ");
+   Debug::writeInt(static_cast<uint64_t>(cause));
+   Debug::writeString(" at PC: ");
+   Debug::writeInt(trap_pc);
+   Debug::writeString(" | Raw Instr/Tval: ");
+   Debug::writeInt(trap_value);
+   Debug::writeString(" | Redirected to: ");
+   Debug::writeInt(program_counter);
    DEBUG_END()
 }
 
@@ -382,7 +391,7 @@ uint64_t Processor::readCSR(uint16_t address)
    if (static_cast<uint32_t>(mode) < privilege_required)
    {
       DEBUG_BEGIN()
-      io->writeString("READCSR TOP");
+      Debug::writeString("READCSR TOP");
       DEBUG_END()
       raiseTrap(TrapCause::ILLEGAL_INSTRUCTION, program_counter);
       return 0;
@@ -480,9 +489,9 @@ uint64_t Processor::readCSR(uint16_t address)
       }
 
       DEBUG_BEGIN()
-      io->writeString("READCSR BOTTOM - Unimplemented CSR: ");
-      io->writeInt(address);
-      io->writeString("\n");
+      Debug::writeString("READCSR BOTTOM - Unimplemented CSR: ");
+      Debug::writeInt(address);
+      Debug::writeString("\n");
       DEBUG_END()
 
       // If we get here, it's a truly unimplemented CSR.
@@ -497,7 +506,7 @@ void Processor::writeCSR(uint16_t address, uint64_t val)
    if (static_cast<uint32_t>(mode) < privilege_required)
    {
       DEBUG_BEGIN()
-      io->writeString("WRITECSR TOP");
+      Debug::writeString("WRITECSR TOP");
       exit(0);
       DEBUG_END()
       raiseTrap(TrapCause::ILLEGAL_INSTRUCTION, program_counter);
@@ -604,9 +613,9 @@ void Processor::writeCSR(uint16_t address, uint64_t val)
 
       // If we get here, it's a truly unimplemented CSR.
       DEBUG_BEGIN()
-      io->writeString("WRITECSR BOTTOM - Unimplemented CSR: ");
-      io->writeInt(address);
-      io->writeString("\n");
+      Debug::writeString("WRITECSR BOTTOM - Unimplemented CSR: ");
+      Debug::writeInt(address);
+      Debug::writeString("\n");
       DEBUG_END()
 
       raiseTrap(TrapCause::ILLEGAL_INSTRUCTION, program_counter);

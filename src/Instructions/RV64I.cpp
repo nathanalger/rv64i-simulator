@@ -14,12 +14,12 @@ void exec_add(const DecodedInstruction &inst, Processor &processor)
        processor.registers[inst.rs2];
 
    TRACE_BEGIN()
-   io->writeString("ADD x");
-   io->writeInt(inst.rd);
-   io->writeString(", x");
-   io->writeInt(inst.rs1);
-   io->writeString(", x");
-   io->writeInt(inst.rs2);
+   Debug::writeString("ADD x");
+   Debug::writeInt(inst.rd);
+   Debug::writeString(", x");
+   Debug::writeInt(inst.rs1);
+   Debug::writeString(", x");
+   Debug::writeInt(inst.rs2);
    DEBUG_END()
 }
 
@@ -40,12 +40,12 @@ void exec_addi(const DecodedInstruction &inst, Processor &processor)
        processor.registers[inst.rs1] + inst.imm;
 
    TRACE_BEGIN()
-   io->writeString("ADDI x");
-   io->writeInt(inst.rd);
-   io->writeString(", x");
-   io->writeInt(inst.rs1);
-   io->writeString(", ");
-   io->writeSignedInt(inst.imm);
+   Debug::writeString("ADDI x");
+   Debug::writeInt(inst.rd);
+   Debug::writeString(", x");
+   Debug::writeInt(inst.rs1);
+   Debug::writeString(", ");
+   Debug::writeHex(inst.imm);
    DEBUG_END()
 }
 
@@ -53,22 +53,25 @@ void exec_lw(const DecodedInstruction &inst, Processor &processor)
 {
    // lw rd,offset(rs1)
    // Fetches a 32-bit word from memory address of rs1 + offset, stores in rd
+   if (inst.rd == 0)
+      return;
+
    uint64_t address = processor.registers[inst.rs1] + inst.imm;
    uint32_t value = processor.bus.readWord(address);
 
-   processor.registers[inst.rd] = static_cast<int32_t>(value);
+   processor.write_reg(inst.rd, static_cast<int32_t>(value));
 
    TRACE_BEGIN()
-   io->writeString("LW x");
-   io->writeInt(inst.rd);
-   io->writeString(", ");
-   io->writeInt(inst.imm);
-   io->writeString("(x");
-   io->writeInt(inst.rs1);
-   io->writeString(") -> addr: ");
-   io->writeInt(address);
-   io->writeString(" -> value: ");
-   io->writeInt(static_cast<int32_t>(value));
+   Debug::writeString("LW x");
+   Debug::writeInt(inst.rd);
+   Debug::writeString(", ");
+   Debug::writeInt(inst.imm);
+   Debug::writeString("(x");
+   Debug::writeInt(inst.rs1);
+   Debug::writeString(") -> addr: ");
+   Debug::writeInt(address);
+   Debug::writeString(" -> value: ");
+   Debug::writeInt(static_cast<int32_t>(value));
    DEBUG_END()
 }
 
@@ -82,16 +85,16 @@ void exec_sw(const DecodedInstruction &inst, Processor &processor)
    processor.bus.writeWord(address, value);
 
    TRACE_BEGIN()
-   io->writeString("SW x");
-   io->writeInt(inst.rs2);
-   io->writeString(", ");
-   io->writeInt(inst.imm);
-   io->writeString("(x");
-   io->writeInt(inst.rs1);
-   io->writeString(") -> addr: ");
-   io->writeInt(address);
-   io->writeString(" <- value: ");
-   io->writeInt(static_cast<int32_t>(value));
+   Debug::writeString("SW x");
+   Debug::writeInt(inst.rs2);
+   Debug::writeString(", ");
+   Debug::writeInt(inst.imm);
+   Debug::writeString("(x");
+   Debug::writeInt(inst.rs1);
+   Debug::writeString(") -> addr: ");
+   Debug::writeInt(address);
+   Debug::writeString(" <- value: ");
+   Debug::writeInt(static_cast<int32_t>(value));
    DEBUG_END()
 }
 
@@ -104,44 +107,44 @@ void exec_beq(const DecodedInstruction &inst, Processor &processor)
       processor.program_counter = current_pc + inst.imm;
 
       TRACE_BEGIN()
-      io->writeString("BEQ x");
-      io->writeInt(inst.rs1);
-      io->writeString(", x");
-      io->writeInt(inst.rs2);
-      io->writeString(" taken -> PC: ");
-      io->writeInt(current_pc);
-      io->writeString(" -> ");
-      io->writeInt(processor.program_counter);
+      Debug::writeString("BEQ x");
+      Debug::writeInt(inst.rs1);
+      Debug::writeString(", x");
+      Debug::writeInt(inst.rs2);
+      Debug::writeString(" taken -> PC: ");
+      Debug::writeInt(current_pc);
+      Debug::writeString(" -> ");
+      Debug::writeInt(processor.program_counter);
       DEBUG_END()
    }
    else
    {
       TRACE_BEGIN()
-      io->writeString("BEQ x");
-      io->writeInt(inst.rs1);
-      io->writeString(", x");
-      io->writeInt(inst.rs2);
-      io->writeString(" not taken.");
+      Debug::writeString("BEQ x");
+      Debug::writeInt(inst.rs1);
+      Debug::writeString(", x");
+      Debug::writeInt(inst.rs2);
+      Debug::writeString(" not taken.");
       DEBUG_END()
    }
 }
 
 void exec_jal(const DecodedInstruction &inst, Processor &processor)
 {
-   processor.registers[inst.rd] = inst.pc + inst.length;
+   processor.write_reg(inst.rd, inst.pc + inst.length);
 
    processor.program_counter = inst.pc + inst.imm;
 
    TRACE_BEGIN()
-   io->writeString("JAL x");
-   io->writeInt(inst.rd);
-   io->writeString(", offset ");
-   io->writeSignedInt(inst.imm);
-   io->writeString(" (PC: ");
-   io->writeInt(inst.pc);
-   io->writeString(" -> ");
-   io->writeInt(processor.program_counter);
-   io->writeString(")");
+   Debug::writeString("JAL x");
+   Debug::writeInt(inst.rd);
+   Debug::writeString(", offset ");
+   Debug::writeHex(inst.imm);
+   Debug::writeString(" (PC: ");
+   Debug::writeInt(inst.pc);
+   Debug::writeString(" -> ");
+   Debug::writeInt(processor.program_counter);
+   Debug::writeString(")");
    DEBUG_END()
 }
 

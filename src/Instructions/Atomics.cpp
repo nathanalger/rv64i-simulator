@@ -18,7 +18,7 @@ void exec_lr_w(const DecodedInstruction &inst, Processor &processor)
    processor.reservation_valid = true;
 
    // 32-bit values must be sign-extended to 64-bit in the register
-   processor.registers[inst.rd] = (int64_t)(int32_t)val;
+   processor.write_reg(inst.rd, (int64_t)(int32_t)val);
 }
 
 void exec_sc_w(const DecodedInstruction &inst, Processor &processor)
@@ -28,11 +28,11 @@ void exec_sc_w(const DecodedInstruction &inst, Processor &processor)
    if (processor.reservation_valid && processor.load_reservation == addr)
    {
       processor.bus.writeWord(addr, (uint32_t)processor.registers[inst.rs2]);
-      processor.registers[inst.rd] = 0; // 0 indicates success
+      processor.write_reg(inst.rd, 0); // 0 indicates success
    }
    else
    {
-      processor.registers[inst.rd] = 1; // Non-zero indicates failure
+      processor.write_reg(inst.rd, 1); // Non-zero indicates failure
    }
 
    // Any SC instruction inherently invalidates the reservation
@@ -47,7 +47,7 @@ void exec_lr_d(const DecodedInstruction &inst, Processor &processor)
    processor.load_reservation = addr;
    processor.reservation_valid = true;
 
-   processor.registers[inst.rd] = val;
+   processor.write_reg(inst.rd, val);
 }
 
 void exec_sc_d(const DecodedInstruction &inst, Processor &processor)
@@ -57,11 +57,11 @@ void exec_sc_d(const DecodedInstruction &inst, Processor &processor)
    if (processor.reservation_valid && processor.load_reservation == addr)
    {
       processor.bus.writeDouble(addr, processor.registers[inst.rs2]);
-      processor.registers[inst.rd] = 0;
+      processor.write_reg(inst.rd, 0);
    }
    else
    {
-      processor.registers[inst.rd] = 1;
+      processor.write_reg(inst.rd, 1);
    }
 
    processor.reservation_valid = false;
@@ -80,7 +80,7 @@ void exec_sc_d(const DecodedInstruction &inst, Processor &processor)
       type src_val = (type)processor.registers[inst.rs2];                     \
       type new_val = op;                                                      \
       processor.bus.writeWord(addr, (uint32_t)new_val);                       \
-      processor.registers[inst.rd] = (int64_t)(int32_t)old_val;               \
+      processor.write_reg(inst.rd, (int64_t)(int32_t)old_val);                \
    }
 
 // Macro for 64-bit (Double) AMOs
@@ -92,7 +92,7 @@ void exec_sc_d(const DecodedInstruction &inst, Processor &processor)
       type src_val = (type)processor.registers[inst.rs2];                     \
       type new_val = op;                                                      \
       processor.bus.writeDouble(addr, (uint64_t)new_val);                     \
-      processor.registers[inst.rd] = (uint64_t)old_val;                       \
+      processor.write_reg(inst.rd, (uint64_t)old_val);                        \
    }
 
 // Implementations using the macros

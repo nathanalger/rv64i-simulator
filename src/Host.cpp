@@ -20,7 +20,7 @@ int main(int argc, char *argv[])
    io = new ConsoleIO();
    env = new WindowsEnvironment();
 
-   Debug::enable_trace();
+   Debug::enableTrace();
 
    CLI config = parseCommandLine(argc, argv);
    if (!config.valid)

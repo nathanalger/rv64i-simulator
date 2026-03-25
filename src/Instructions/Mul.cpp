@@ -27,7 +27,7 @@ static uint64_t multiply_high_u64(uint64_t u, uint64_t v)
 
 void exec_mul(const DecodedInstruction &inst, Processor &processor)
 {
-   processor.registers[inst.rd] = processor.registers[inst.rs1] * processor.registers[inst.rs2];
+   processor.write_reg(inst.rd, processor.registers[inst.rs1] * processor.registers[inst.rs2]);
 }
 
 void exec_div(const DecodedInstruction &inst, Processor &processor)
@@ -37,16 +37,16 @@ void exec_div(const DecodedInstruction &inst, Processor &processor)
 
    if (b == 0)
    {
-      processor.registers[inst.rd] = -1;
+      processor.write_reg(inst.rd, -1);
    }
    // Use hex to represent INT64_MIN: 0x8000000000000000
    else if ((uint64_t)a == 0x8000000000000000ULL && b == -1)
    {
-      processor.registers[inst.rd] = a;
+      processor.write_reg(inst.rd, a);
    }
    else
    {
-      processor.registers[inst.rd] = a / b;
+      processor.write_reg(inst.rd, a / b);
    }
 }
 
@@ -55,9 +55,9 @@ void exec_divu(const DecodedInstruction &inst, Processor &processor)
    uint64_t a = processor.registers[inst.rs1];
    uint64_t b = processor.registers[inst.rs2];
    if (b == 0)
-      processor.registers[inst.rd] = 0xFFFFFFFFFFFFFFFFULL;
+      processor.write_reg(inst.rd, 0xFFFFFFFFFFFFFFFFULL);
    else
-      processor.registers[inst.rd] = a / b;
+      processor.write_reg(inst.rd, a / b);
 }
 
 void exec_rem(const DecodedInstruction &inst, Processor &processor)
@@ -66,15 +66,15 @@ void exec_rem(const DecodedInstruction &inst, Processor &processor)
    int64_t b = (int64_t)processor.registers[inst.rs2];
    if (b == 0)
    {
-      processor.registers[inst.rd] = a;
+      processor.write_reg(inst.rd, a);
    }
    else if ((uint64_t)a == 0x8000000000000000ULL && b == -1)
    {
-      processor.registers[inst.rd] = 0;
+      processor.write_reg(inst.rd, 0);
    }
    else
    {
-      processor.registers[inst.rd] = a % b;
+      processor.write_reg(inst.rd, a % b);
    }
 }
 
@@ -85,16 +85,16 @@ void exec_remu(const DecodedInstruction &inst, Processor &processor)
    uint64_t a = processor.registers[inst.rs1];
    uint64_t b = processor.registers[inst.rs2];
    if (b == 0)
-      processor.registers[inst.rd] = a;
+      processor.write_reg(inst.rd, a);
    else
-      processor.registers[inst.rd] = a % b;
+      processor.write_reg(inst.rd, a % b);
 }
 
 // Word variants
 void exec_mulw(const DecodedInstruction &inst, Processor &processor)
 {
    int32_t res = (int32_t)processor.registers[inst.rs1] * (int32_t)processor.registers[inst.rs2];
-   processor.registers[inst.rd] = (int64_t)res;
+   processor.write_reg(inst.rd, (int64_t)res);
 }
 
 void exec_divw(const DecodedInstruction &inst, Processor &processor)
@@ -102,11 +102,11 @@ void exec_divw(const DecodedInstruction &inst, Processor &processor)
    int32_t a = (int32_t)processor.registers[inst.rs1];
    int32_t b = (int32_t)processor.registers[inst.rs2];
    if (b == 0)
-      processor.registers[inst.rd] = -1;
+      processor.write_reg(inst.rd, -1);
    else if (a == (int32_t)0x80000000 && b == -1)
-      processor.registers[inst.rd] = (int64_t)a;
+      processor.write_reg(inst.rd, (int64_t)a);
    else
-      processor.registers[inst.rd] = (int64_t)(a / b);
+      processor.write_reg(inst.rd, (int64_t)(a / b));
 }
 
 void exec_divuw(const DecodedInstruction &inst, Processor &processor)
@@ -114,9 +114,9 @@ void exec_divuw(const DecodedInstruction &inst, Processor &processor)
    uint32_t a = (uint32_t)processor.registers[inst.rs1];
    uint32_t b = (uint32_t)processor.registers[inst.rs2];
    if (b == 0)
-      processor.registers[inst.rd] = 0xFFFFFFFFFFFFFFFFULL;
+      processor.write_reg(inst.rd, 0xFFFFFFFFFFFFFFFFULL);
    else
-      processor.registers[inst.rd] = (int64_t)(int32_t)(a / b);
+      processor.write_reg(inst.rd, (int64_t)(int32_t)(a / b));
 }
 
 void exec_remw(const DecodedInstruction &inst, Processor &processor)
@@ -124,11 +124,11 @@ void exec_remw(const DecodedInstruction &inst, Processor &processor)
    int32_t a = (int32_t)processor.registers[inst.rs1];
    int32_t b = (int32_t)processor.registers[inst.rs2];
    if (b == 0)
-      processor.registers[inst.rd] = (int64_t)a;
+      processor.write_reg(inst.rd, (int64_t)a);
    else if (a == (int32_t)0x80000000 && b == -1)
-      processor.registers[inst.rd] = 0;
+      processor.write_reg(inst.rd, 0);
    else
-      processor.registers[inst.rd] = (int64_t)(a % b);
+      processor.write_reg(inst.rd, (int64_t)(a % b));
 }
 
 void exec_remuw(const DecodedInstruction &inst, Processor &processor)
@@ -136,9 +136,9 @@ void exec_remuw(const DecodedInstruction &inst, Processor &processor)
    uint32_t a = (uint32_t)processor.registers[inst.rs1];
    uint32_t b = (uint32_t)processor.registers[inst.rs2];
    if (b == 0)
-      processor.registers[inst.rd] = (int64_t)(int32_t)a;
+      processor.write_reg(inst.rd, (int64_t)(int32_t)a);
    else
-      processor.registers[inst.rd] = (int64_t)(int32_t)(a % b);
+      processor.write_reg(inst.rd, (int64_t)(int32_t)(a % b));
 }
 
 void exec_mulh(const DecodedInstruction &inst, Processor &processor)
@@ -152,7 +152,7 @@ void exec_mulh(const DecodedInstruction &inst, Processor &processor)
    if ((int64_t)v < 0)
       res_hi -= u;
 
-   processor.registers[inst.rd] = res_hi;
+   processor.write_reg(inst.rd, res_hi);
 }
 
 void exec_mulhsu(const DecodedInstruction &inst, Processor &processor)
@@ -164,7 +164,7 @@ void exec_mulhsu(const DecodedInstruction &inst, Processor &processor)
    if ((int64_t)u < 0)
       res_hi -= v;
 
-   processor.registers[inst.rd] = res_hi;
+   processor.write_reg(inst.rd, res_hi);
 }
 
 void exec_mulhu(const DecodedInstruction &inst, Processor &processor)

@@ -34,7 +34,7 @@ void WindowsEnvironment::handle_ecall(Processor &cpu)
          if (io)
             io->writeChar(c);
       }
-      cpu.registers[10] = arg2;
+      cpu.write_reg(10, arg2);
       break;
    }
 
@@ -49,7 +49,7 @@ void WindowsEnvironment::handle_ecall(Processor &cpu)
       {
          cpu.bus.writeByte(arg1 + i, input[i]);
       }
-      cpu.registers[10] = bytes_to_copy;
+      cpu.write_reg(10, bytes_to_copy);
       break;
    }
 
@@ -59,7 +59,7 @@ void WindowsEnvironment::handle_ecall(Processor &cpu)
       // This is used for malloc. For now, we return a fake heap pointer
       // or the requested address if it's within bounds.
       // A simple "always succeed" dummy for now:
-      cpu.registers[10] = arg0 == 0 ? 0x400000 : arg0;
+      cpu.write_reg(10, arg0 == 0 ? 0x400000 : arg0);
       break;
    }
 

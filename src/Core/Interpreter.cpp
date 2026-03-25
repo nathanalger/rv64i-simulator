@@ -268,7 +268,7 @@ static int32_t decode_b(uint32_t raw)
 
 static int32_t decode_u(uint32_t raw)
 {
-   return raw & 0xFFFFF000;
+   return static_cast<int32_t>(raw & 0xFFFFF000);
 }
 
 static int32_t decode_j(uint32_t raw)
@@ -289,7 +289,7 @@ bool Interpreter::handle(uint32_t raw, Processor &processor, uint8_t length)
 
    if (inst.opcode == 0x0F)
    {
-      processor.registers[0] = 0;
+      processor.write_reg(0, 0);
       return true;
    }
 
@@ -325,11 +325,11 @@ bool Interpreter::handle(uint32_t raw, Processor &processor, uint8_t length)
    else
    {
       DEBUG_BEGIN()
-      io->writeString("INSTRUCTION LOOKUP RETURNED NULL");
+      Debug::writeString("INSTRUCTION LOOKUP RETURNED NULL");
       DEBUG_END()
       processor.raiseTrap(TrapCause::ILLEGAL_INSTRUCTION, inst.pc);
    }
 
-   processor.registers[0] = 0;
+   processor.write_reg(0, 0);
    return true;
 }

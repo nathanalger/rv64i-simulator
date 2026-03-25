@@ -24,13 +24,13 @@ uint64_t InjectionLoader::load(Bus &bus, uint64_t start_address, const char *fil
    }
 
    DEBUG_BEGIN()
-   io->writeString("Successfully injected '");
-   io->writeString(filename);
-   io->writeString("' (");
-   io->writeInt(offset);
-   io->writeString(" bytes) at ");
-   io->writeInt(start_address);
-   io->writeString("\n");
+   Debug::writeString("Successfully injected '");
+   Debug::writeString(filename);
+   Debug::writeString("' (");
+   Debug::writeInt(offset);
+   Debug::writeString(" bytes) at ");
+   Debug::writeInt(start_address);
+   Debug::writeString("\n");
    DEBUG_END()
 
    return offset;

@@ -88,6 +88,8 @@ public:
    uint32_t decompress(uint16_t instr);
    uint32_t fetchInstruction(uint64_t vaddr);
 
+   void write_reg(uint8_t rd, uint64_t value);
+
    /**
     * Read a Control & Status Register (CSR) value
     */

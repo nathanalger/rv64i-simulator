@@ -13,16 +13,16 @@ void exec_sb(const DecodedInstruction &inst, Processor &processor)
    processor.bus.writeByte(address, value);
 
    TRACE_BEGIN()
-   io->writeString("SB x");
-   io->writeInt(inst.rs2);
-   io->writeString(", ");
-   io->writeInt(inst.imm);
-   io->writeString("(x");
-   io->writeInt(inst.rs1);
-   io->writeString(") -> addr: ");
-   io->writeInt(address);
-   io->writeString(" <- value: ");
-   io->writeInt(value);
+   Debug::writeString("SB x");
+   Debug::writeInt(inst.rs2);
+   Debug::writeString(", ");
+   Debug::writeInt(inst.imm);
+   Debug::writeString("(x");
+   Debug::writeInt(inst.rs1);
+   Debug::writeString(") -> addr: ");
+   Debug::writeInt(address);
+   Debug::writeString(" <- value: ");
+   Debug::writeInt(value);
    DEBUG_END()
 }
 
@@ -34,16 +34,16 @@ void exec_sh(const DecodedInstruction &inst, Processor &processor)
    processor.bus.writeHalf(address, value);
 
    TRACE_BEGIN()
-   io->writeString("SH x");
-   io->writeInt(inst.rs2);
-   io->writeString(", ");
-   io->writeInt(inst.imm);
-   io->writeString("(x");
-   io->writeInt(inst.rs1);
-   io->writeString(") -> addr: ");
-   io->writeInt(address);
-   io->writeString(" <- value: ");
-   io->writeInt(value);
+   Debug::writeString("SH x");
+   Debug::writeInt(inst.rs2);
+   Debug::writeString(", ");
+   Debug::writeInt(inst.imm);
+   Debug::writeString("(x");
+   Debug::writeInt(inst.rs1);
+   Debug::writeString(") -> addr: ");
+   Debug::writeInt(address);
+   Debug::writeString(" <- value: ");
+   Debug::writeInt(value);
    DEBUG_END()
 }
 
@@ -55,16 +55,16 @@ void exec_sd(const DecodedInstruction &inst, Processor &processor)
    processor.bus.writeDouble(address, value);
 
    TRACE_BEGIN()
-   io->writeString("SD x");
-   io->writeInt(inst.rs2);
-   io->writeString(", ");
-   io->writeInt(inst.imm);
-   io->writeString("(x");
-   io->writeInt(inst.rs1);
-   io->writeString(") -> addr: ");
-   io->writeInt(address);
-   io->writeString(" <- value: ");
-   io->writeInt(value);
+   Debug::writeString("SD x");
+   Debug::writeInt(inst.rs2);
+   Debug::writeString(", ");
+   Debug::writeInt(inst.imm);
+   Debug::writeString("(x");
+   Debug::writeInt(inst.rs1);
+   Debug::writeString(") -> addr: ");
+   Debug::writeInt(address);
+   Debug::writeString(" <- value: ");
+   Debug::writeInt(value);
    DEBUG_END()
 }
 

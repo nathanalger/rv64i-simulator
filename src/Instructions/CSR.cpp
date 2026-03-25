@@ -42,7 +42,6 @@ void exec_ebreak(const DecodedInstruction &inst, Processor &processor)
    }
 }
 
-// MRET/SRET are critical: They MUST NOT allow step() to increment PC afterward.
 void exec_mret(const DecodedInstruction &, Processor &processor)
 {
    if (processor.mode < PrivilegeMode::Machine)
@@ -68,15 +67,13 @@ void exec_mret(const DecodedInstruction &, Processor &processor)
 
    processor.writeCSR(0x300, mstatus);
 
-   // Set PC to mepc. Since we modify PC here, step() will see
-   // (new_pc != inst.pc) and skip the auto-increment.
    processor.program_counter = processor.readCSR(0x341);
 
    TRACE_BEGIN()
-   io->writeString("MRET -> Switched to Mode: ");
-   io->writeInt(mpp);
-   io->writeString(", Target PC: ");
-   io->writeInt(processor.program_counter);
+   Debug::writeString("MRET -> Switched to Mode: ");
+   Debug::writeInt(mpp);
+   Debug::writeString(", Target PC: ");
+   Debug::writeInt(processor.program_counter);
    DEBUG_END()
 }
 
@@ -105,9 +102,6 @@ void exec_sret(const DecodedInstruction &, Processor &processor)
    processor.program_counter = processor.readCSR(0x141);
 }
 
-// --- CSR Instructions ---
-// These are sequential instructions. step() will increment PC for them.
-
 void exec_csrrw(const DecodedInstruction &inst, Processor &processor)
 {
    uint16_t csr_addr = static_cast<uint16_t>(inst.imm & 0xFFF);
@@ -117,7 +111,7 @@ void exec_csrrw(const DecodedInstruction &inst, Processor &processor)
       uint64_t old_val = processor.readCSR(csr_addr);
       if (processor.trap_pending)
          return;
-      processor.registers[inst.rd] = old_val;
+      processor.write_reg(inst.rd, old_val);
    }
 
    processor.writeCSR(csr_addr, processor.registers[inst.rs1]);
@@ -133,7 +127,7 @@ void exec_csrrs(const DecodedInstruction &inst, Processor &processor)
       return;
 
    if (inst.rd != 0)
-      processor.registers[inst.rd] = old_val;
+      processor.write_reg(inst.rd, old_val);
 
    if (inst.rs1 != 0)
    {
@@ -147,7 +141,7 @@ void exec_csrrc(const DecodedInstruction &inst, Processor &processor)
    uint64_t old_val = processor.readCSR(csr_addr);
 
    if (inst.rd != 0)
-      processor.registers[inst.rd] = old_val;
+      processor.write_reg(inst.rd, old_val);
    if (inst.rs1 != 0)
    {
       processor.writeCSR(csr_addr, old_val & ~processor.registers[inst.rs1]);
@@ -163,7 +157,7 @@ void exec_csrrwi(const DecodedInstruction &inst, Processor &processor)
 
    processor.writeCSR(csr_addr, zimm);
    if (inst.rd != 0)
-      processor.registers[inst.rd] = old_val;
+      processor.write_reg(inst.rd, old_val);
 }
 
 void exec_csrrsi(const DecodedInstruction &inst, Processor &processor)
@@ -173,7 +167,7 @@ void exec_csrrsi(const DecodedInstruction &inst, Processor &processor)
    uint64_t zimm = inst.rs1;
 
    if (inst.rd != 0)
-      processor.registers[inst.rd] = old_val;
+      processor.write_reg(inst.rd, old_val);
    if (zimm != 0)
       processor.writeCSR(csr_addr, old_val | zimm);
 }
@@ -185,7 +179,7 @@ void exec_csrrci(const DecodedInstruction &inst, Processor &processor)
    uint64_t zimm = inst.rs1;
 
    if (inst.rd != 0)
-      processor.registers[inst.rd] = old_val;
+      processor.write_reg(inst.rd, old_val);
    if (zimm != 0)
       processor.writeCSR(csr_addr, old_val & ~zimm);
 }
@@ -206,11 +200,11 @@ static void exec_system_dispatch(const DecodedInstruction &inst, Processor &proc
    case 0x302:
       exec_mret(inst, processor);
       break;
-   case 0x105: /* WFI - Usually a NOP in basic emulators */
+   case 0x105:
       break;
    default:
       TRACE_BEGIN()
-      io->writeString("UNIMPLEMENTED CSR");
+      Debug::writeString("UNIMPLEMENTED CSR");
       DEBUG_END()
       processor.raiseTrap(TrapCause::ILLEGAL_INSTRUCTION, inst.pc);
       break;
