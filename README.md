@@ -1,6 +1,6 @@
 # RV64I Simulator
 
-A full featured RISC-V System Simulator. This emulator is capable of running small compiled RISC-V programs or full operating systems.
+This is an OpenSBI compliant, fully featured RISC-V System Simulator. This emulator is capable of running from small compiled RISC-V program to featured operating systems.
 
 This project simulates multiple parts of a full RISC-V computer system, such as:
 
@@ -28,13 +28,13 @@ Core features include:
 
 This project has two different build variants, `Host` and `Core`.
 
-**Host** is meant to be a simulator run inside of an operating system that has a terminal and system functions to aid in initialization and interraction with the simulator. This uses standard io libraries to output to a console, as well as to inject code into memory on initialization. It additionally has a CLI interface for debugging and memory management. Host can be used like so:
+**Host** is meant to be a simulator run inside of an operating system that has a terminal and system functions to aid in initialization and interaction with the simulator. This uses standard io libraries to output to a console, as well as to inject code into memory on initialization. It additionally has a CLI interface for debugging and memory management. Host can be used like so:
 
 ```bash
 ./rv64i <binary_file> [--memory kb] [--debug]
 ```
 
-**Core** is a bare-bones implementation of the simulator. It is still fully featured, however it is fully independent of any standard libraries. This is intended to, at some point, be run on top of a kernel, with no fully fledged operating system, so that a RISC-V operating system could theoretically be simulated at a low level.
+**Core** is a bare-bones implementation of the simulator. It is still entirely capable of simulation, however it is independent of any standard libraries. This is intended to, at some point, be run on top of a kernel, with no true operating system, so that a RISC-V operating system could be simulated at a low level.
 
 ### Separation of files
 
@@ -81,4 +81,4 @@ The build command can be found in `.vscode/tasks.json`. You will find that a bui
 
 ## AI Disclosure
 
-I am a solo developer and a student, and Artificial Intelligence has been a massive help in learning specific system functions that I did not previously know were necessary. While the main RISC-V interpreter and core functions were implemented by hand, CSRs and some RISC-V C extension handling was implemented with the assistance of AI, as doing it by hand would take an insane amount of time. Using AI as a resource is invaluable and has taught me a lot about how processors and systems interract.
+I am a solo developer and a student, and Artificial Intelligence has been a massive help in learning specific system functions that I did not previously know were necessary. While the main RISC-V interpreter and core functions were implemented by hand, CSRs and some RISC-V C extension handling was implemented with the assistance of AI, as doing it by hand would take an insane amount of time. Leveraging AI for these repetitive tasks allowed me to focus my efforts on system design and OpenSBI compliance.
