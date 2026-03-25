@@ -327,7 +327,7 @@ bool Interpreter::handle(uint32_t raw, Processor &processor, uint8_t length)
       DEBUG_BEGIN()
       Debug::writeString("INSTRUCTION LOOKUP RETURNED NULL");
       DEBUG_END()
-      processor.raiseTrap(TrapCause::ILLEGAL_INSTRUCTION, inst.pc);
+      processor.raiseTrap(TrapCause::ILLEGAL_INSTRUCTION, inst.pc, raw);
    }
 
    processor.write_reg(0, 0);

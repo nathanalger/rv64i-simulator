@@ -7,7 +7,6 @@
 
 void exec_ecall(const DecodedInstruction &inst, Processor &processor)
 {
-   // Use inst.pc instead of processor.program_counter for trap reporting
    if (env != nullptr)
    {
       env->handle_ecall(processor);
@@ -15,30 +14,26 @@ void exec_ecall(const DecodedInstruction &inst, Processor &processor)
    else
    {
       if (processor.mode == PrivilegeMode::User)
-         processor.raiseTrap(TrapCause::ECALL_FROM_U_MODE, inst.pc);
+         processor.raiseTrap(TrapCause::ECALL_FROM_U_MODE, inst.pc, 0);
       else if (processor.mode == PrivilegeMode::Supervisor)
-         processor.raiseTrap(TrapCause::ECALL_FROM_S_MODE, inst.pc);
+         processor.raiseTrap(TrapCause::ECALL_FROM_S_MODE, inst.pc, 0);
       else
-         processor.raiseTrap(TrapCause::ECALL_FROM_M_MODE, inst.pc);
+         processor.raiseTrap(TrapCause::ECALL_FROM_M_MODE, inst.pc, 0);
    }
 }
 
 void exec_ebreak(const DecodedInstruction &inst, Processor &processor)
 {
+   processor.raiseTrap(TrapCause::BREAKPOINT, inst.pc, inst.pc);
 
    if (env != nullptr)
    {
       env->handle_ebreak(processor);
    }
-   else
-   {
-      processor.raiseTrap(TrapCause::BREAKPOINT, inst.pc);
-   }
 
    if (io)
    {
       Debug::dump();
-      io->pause();
    }
 }
 
@@ -46,7 +41,7 @@ void exec_mret(const DecodedInstruction &, Processor &processor)
 {
    if (processor.mode < PrivilegeMode::Machine)
    {
-      processor.raiseTrap(TrapCause::ILLEGAL_INSTRUCTION, processor.program_counter);
+      processor.raiseTrap(TrapCause::ILLEGAL_INSTRUCTION, processor.program_counter, processor.bus.readWord(processor.program_counter));
       return;
    }
 
@@ -77,11 +72,11 @@ void exec_mret(const DecodedInstruction &, Processor &processor)
    DEBUG_END()
 }
 
-void exec_sret(const DecodedInstruction &, Processor &processor)
+void exec_sret(const DecodedInstruction &inst, Processor &processor)
 {
    if (processor.mode < PrivilegeMode::Supervisor)
    {
-      processor.raiseTrap(TrapCause::ILLEGAL_INSTRUCTION, processor.program_counter);
+      processor.raiseTrap(TrapCause::ILLEGAL_INSTRUCTION, inst.pc, processor.bus.readWord(inst.pc));
       return;
    }
 
@@ -105,6 +100,7 @@ void exec_sret(const DecodedInstruction &, Processor &processor)
 void exec_csrrw(const DecodedInstruction &inst, Processor &processor)
 {
    uint16_t csr_addr = static_cast<uint16_t>(inst.imm & 0xFFF);
+   uint64_t value_to_write = processor.registers[inst.rs1];
 
    if (inst.rd != 0)
    {
@@ -114,13 +110,13 @@ void exec_csrrw(const DecodedInstruction &inst, Processor &processor)
       processor.write_reg(inst.rd, old_val);
    }
 
-   processor.writeCSR(csr_addr, processor.registers[inst.rs1]);
+   processor.writeCSR(csr_addr, value_to_write);
 }
 
 void exec_csrrs(const DecodedInstruction &inst, Processor &processor)
 {
-
    uint16_t csr_addr = static_cast<uint16_t>(inst.imm & 0xFFF);
+   uint64_t rs1_val = processor.registers[inst.rs1];
    uint64_t old_val = processor.readCSR(csr_addr);
 
    if (processor.trap_pending)
@@ -131,29 +127,33 @@ void exec_csrrs(const DecodedInstruction &inst, Processor &processor)
 
    if (inst.rs1 != 0)
    {
-      processor.writeCSR(csr_addr, old_val | processor.registers[inst.rs1]);
+      processor.writeCSR(csr_addr, old_val | rs1_val);
    }
 }
 
 void exec_csrrc(const DecodedInstruction &inst, Processor &processor)
 {
    uint16_t csr_addr = static_cast<uint16_t>(inst.imm & 0xFFF);
+   uint64_t rs1_val = processor.registers[inst.rs1];
    uint64_t old_val = processor.readCSR(csr_addr);
+
+   if (processor.trap_pending)
+      return;
 
    if (inst.rd != 0)
       processor.write_reg(inst.rd, old_val);
+
    if (inst.rs1 != 0)
    {
-      processor.writeCSR(csr_addr, old_val & ~processor.registers[inst.rs1]);
+      processor.writeCSR(csr_addr, old_val & ~rs1_val);
    }
 }
 
-// Immediate variants
 void exec_csrrwi(const DecodedInstruction &inst, Processor &processor)
 {
    uint16_t csr_addr = static_cast<uint16_t>(inst.imm & 0xFFF);
    uint64_t old_val = processor.readCSR(csr_addr);
-   uint64_t zimm = inst.rs1; // 5-bit zero extended immediate
+   uint64_t zimm = inst.rs1;
 
    processor.writeCSR(csr_addr, zimm);
    if (inst.rd != 0)
@@ -206,7 +206,7 @@ static void exec_system_dispatch(const DecodedInstruction &inst, Processor &proc
       TRACE_BEGIN()
       Debug::writeString("UNIMPLEMENTED CSR");
       DEBUG_END()
-      processor.raiseTrap(TrapCause::ILLEGAL_INSTRUCTION, inst.pc);
+      processor.raiseTrap(TrapCause::ILLEGAL_INSTRUCTION, inst.pc, processor.bus.readWord(inst.pc));
       break;
    }
 }

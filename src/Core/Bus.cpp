@@ -18,6 +18,8 @@ uint8_t Bus::readByte(uint64_t address)
    {
       return ram.readByte(address - ram_base);
    }
+
+   cpu->raiseTrap(TrapCause::LOAD_ACCESS_FAULT, cpu->program_counter, address);
    return 0;
 }
 
@@ -43,6 +45,8 @@ uint16_t Bus::readHalf(uint64_t address)
    {
       return ram.readHalf(address - ram_base);
    }
+
+   cpu->raiseTrap(TrapCause::LOAD_ACCESS_FAULT, cpu->program_counter, address);
    return 0;
 }
 
@@ -67,6 +71,8 @@ uint32_t Bus::readWord(uint64_t address)
 
    if (cpu)
    {
+      if (address == 0x02000000) // MSIP for Hart 0
+         return cpu->msip;       // You'll need to add a uint32_t msip to your Processor class!
       if (address == 0x0200BFF8)
          return (uint32_t)(cpu->mtime & 0xFFFFFFFF);
       if (address == 0x0200BFFC)
@@ -81,6 +87,8 @@ uint32_t Bus::readWord(uint64_t address)
    {
       return ram.readWord(address - ram_base);
    }
+
+   cpu->raiseTrap(TrapCause::LOAD_ACCESS_FAULT, cpu->program_counter, address);
    return 0;
 }
 
@@ -90,6 +98,36 @@ uint32_t Bus::writeWord(uint64_t address, uint32_t value)
    {
       uart->writeByte(address, (uint8_t)value);
       return value;
+   }
+
+   if (cpu)
+   {
+      if (address == 0x02000000)
+      {
+         cpu->msip = value & 1; // MSIP only cares about the lowest bit
+
+         // Update the Machine Interrupt Pending (mip) CSR - Bit 3
+         uint64_t current_mip = cpu->readCSR(0x344);
+         if (cpu->msip)
+         {
+            cpu->writeCSR(0x344, current_mip | (1ULL << 3));
+         }
+         else
+         {
+            cpu->writeCSR(0x344, current_mip & ~(1ULL << 3));
+         }
+         return value;
+      }
+      if (address == 0x02004000) // mtimecmp Low
+      {
+         cpu->mtimecmp = (cpu->mtimecmp & 0xFFFFFFFF00000000ULL) | value;
+         return value;
+      }
+      if (address == 0x02004004) // mtimecmp High
+      {
+         cpu->mtimecmp = (cpu->mtimecmp & 0x00000000FFFFFFFFULL) | ((uint64_t)value << 32);
+         return value;
+      }
    }
    if (address >= ram_base && address + 3 <= ram_base + ram.getSize())
    {
@@ -113,6 +151,8 @@ uint64_t Bus::readDouble(uint64_t address)
    {
       return ram.readDouble(address - ram_base);
    }
+
+   cpu->raiseTrap(TrapCause::LOAD_ACCESS_FAULT, cpu->program_counter, address);
    return 0;
 }
 

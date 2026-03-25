@@ -14,29 +14,6 @@ struct CSRRange
    uint16_t end;
 };
 
-const CSRRange PROBE_SHIELD[] = {
-    {0x107, 0x11F}, // S-Mode Configs (includes 268/0x10C)
-    {0x307, 0x31F}, // M-Mode Configs (includes 780/0x30C)
-    {0x345, 0x34F}, // M-Mode Extra Traps
-    {0x3A0, 0x3EF}, // PMP (Physical Memory Protection)
-    {0x600, 0x7FF}, // Hypervisor & Custom Extensions
-    {0xDA0, 0xDBF}, // Scalar Crypto / Entropy
-    {0xFB0, 0xFBF}, // Debug / Trigger Context
-    {0xC00, 0xC1F}, // User-mode Performance Counters
-    {0xF00, 0xF10}};
-
-bool isOptionalProbe(uint16_t address)
-{
-   if (address == 0x14D)
-      return true; // Single outlier: Count Overflow
-   for (const auto &range : PROBE_SHIELD)
-   {
-      if (address >= range.start && address <= range.end)
-         return true;
-   }
-   return false;
-}
-
 const uint64_t STACK_GUARD = 8;
 
 void Processor::write_reg(uint8_t rd, uint64_t value)
@@ -88,6 +65,7 @@ bool Processor::step()
    mtime++;
    write_reg(0, 0);
    uint64_t physical_pc;
+
    if (!translate(program_counter, physical_pc, AccessType::FETCH))
       return false;
 
@@ -98,14 +76,28 @@ bool Processor::step()
 
    if ((first_half & 0x3) != 0x3)
    {
-      // It's compressed
+      // It's 16-bit compressed
       raw_instruction = decompress(first_half);
       length = 2;
    }
    else
    {
-      // It's 32-bit
-      uint16_t second_half = bus.readHalf(physical_pc + 2);
+      // It's 32-bit. Watch out for page boundaries!
+      uint64_t physical_pc_second;
+
+      // If PC is at the very last 2 bytes of a 4KB page
+      if ((program_counter & 0xFFF) == 0xFFE)
+      {
+         // Translate the next page to find the second half safely
+         if (!translate(program_counter + 2, physical_pc_second, AccessType::FETCH))
+            return false;
+      }
+      else
+      {
+         physical_pc_second = physical_pc + 2;
+      }
+
+      uint16_t second_half = bus.readHalf(physical_pc_second);
       raw_instruction = (static_cast<uint32_t>(second_half) << 16) | first_half;
       length = 4;
    }
@@ -146,77 +138,120 @@ void Processor::run()
    }
 }
 
-void Processor::raiseTrap(TrapCause cause, uint64_t trap_pc)
+// Ensure you update your header file to match this signature!
+void Processor::raiseTrap(TrapCause cause, uint64_t trap_pc, uint64_t trap_value)
 {
    trap_pending = true;
-   writeCSR(0x341, trap_pc);
-   writeCSR(0x342, static_cast<uint64_t>(cause));
 
-   uint64_t trap_value = 0;
-   if (cause == TrapCause::ILLEGAL_INSTRUCTION)
+   bool is_interrupt = (static_cast<uint64_t>(cause) & INTERRUPT_BIT) != 0;
+   uint64_t exception_code = static_cast<uint64_t>(cause) & ~INTERRUPT_BIT;
+
+   // 1. Determine if this trap should be delegated to Supervisor Mode
+   bool delegate_to_s = false;
+
+   // Traps never delegate to a less privileged mode.
+   // M-mode traps stay in M-mode.
+   if (mode <= PrivilegeMode::Supervisor)
    {
-      uint16_t first = bus.readHalf(trap_pc);
-      if ((first & 0x3) != 0x3)
-      {
-         trap_value = first; // 16-bit compressed
-      }
+      if (is_interrupt)
+         delegate_to_s = (mideleg & (1ULL << exception_code)) != 0;
       else
-      {
-         uint16_t second = bus.readHalf(trap_pc + 2);
-         trap_value = (static_cast<uint32_t>(second) << 16) | first;
-      }
+         delegate_to_s = (medeleg & (1ULL << exception_code)) != 0;
    }
 
-   writeCSR(0x343, trap_value);
-
-   // 4. Update mstatus (0x300) to save current privilege and disable interrupts
-   uint64_t current_mstatus = readCSR(0x300);
-
-   // Extract current MIE (Machine Interrupt Enable) bit (Bit 3)
-   uint64_t mie = (current_mstatus & 0x8) >> 3;
-
-   // Clear MPIE (Bit 7), MIE (Bit 3), and MPP (Bits 11:12)
-   current_mstatus &= ~(0x80 | 0x8 | 0x1800);
-
-   // Set MPIE to the old MIE value
-   current_mstatus |= (mie << 7);
-
-   // Set MPP (Machine Previous Privilege) to our current mode before the trap
-   current_mstatus |= (static_cast<uint64_t>(mode) << 11);
-
-   // Write back the updated mstatus
-   writeCSR(0x300, current_mstatus);
-
-   // 5. Force the processor into Machine Mode to handle the trap
-   mode = PrivilegeMode::Machine;
-
-   // 6. Calculate the jump address from mtvec (0x305)
-   uint64_t current_mtvec = readCSR(0x305);
-   uint64_t base_address = current_mtvec & ~3ULL; // The top 62 bits
-   uint64_t mode_flag = current_mtvec & 3ULL;     // The bottom 2 bits
-
-   // If mode_flag is 1 (Vectored) AND this is an asynchronous interrupt
-   if (mode_flag == 1 && (static_cast<uint64_t>(cause) & INTERRUPT_BIT))
+   // 2. Handle Supervisor Mode Trap
+   if (delegate_to_s)
    {
-      // Strip the interrupt bit to get the raw exception code, multiply by 4
-      uint64_t exception_code = static_cast<uint64_t>(cause) & ~INTERRUPT_BIT;
-      program_counter = base_address + (4 * exception_code);
+      writeCSR(0x141, trap_pc);                      // sepc
+      writeCSR(0x142, static_cast<uint64_t>(cause)); // scause
+      writeCSR(0x143, trap_value);                   // stval (passed in safely!)
+
+      uint64_t sstatus = readCSR(0x100);
+      uint64_t sie = (sstatus & 0x2) >> 1; // Extract current SIE
+
+      // Clear SPIE (5), SIE (1), and SPP (8)
+      sstatus &= ~(0x20 | 0x2 | 0x100);
+
+      sstatus |= (sie << 5);                                                                                    // SPIE = SIE
+      sstatus |= (static_cast<uint64_t>(mode) == static_cast<uint64_t>(PrivilegeMode::User) ? 0 : (1ULL << 8)); // SPP = previous mode
+
+      writeCSR(0x100, sstatus);
+      mode = PrivilegeMode::Supervisor;
+
+      uint64_t stvec_val = readCSR(0x105);
+      uint64_t base_address = stvec_val & ~3ULL;
+      uint64_t mode_flag = stvec_val & 3ULL;
+
+      if (mode_flag == 1 && is_interrupt)
+         program_counter = base_address + (4 * exception_code);
+      else
+         program_counter = base_address;
    }
+   // 3. Handle Machine Mode Trap
    else
    {
-      // Direct mode: All traps jump to the exact base address
-      program_counter = base_address;
+      writeCSR(0x341, trap_pc);                      // mepc
+      writeCSR(0x342, static_cast<uint64_t>(cause)); // mcause
+      writeCSR(0x343, trap_value);                   // mtval (passed in safely!)
+
+      uint64_t mstatus = readCSR(0x300);
+      uint64_t mie = (mstatus & 0x8) >> 3;
+
+      mstatus &= ~(0x80 | 0x8 | 0x1800);
+      mstatus |= (mie << 7);
+      mstatus |= (static_cast<uint64_t>(mode) << 11);
+
+      writeCSR(0x300, mstatus);
+      mode = PrivilegeMode::Machine;
+
+      uint64_t mtvec_val = readCSR(0x305);
+      uint64_t base_address = mtvec_val & ~3ULL;
+      uint64_t mode_flag = mtvec_val & 3ULL;
+
+      if (mode_flag == 1 && is_interrupt)
+         program_counter = base_address + (4 * exception_code);
+      else
+         program_counter = base_address;
    }
 
    DEBUG_BEGIN()
-   Debug::writeString("TRAP ");
+   Debug::writeString("\n>>> TRAP ENCOUNTERED <<<\n");
+   Debug::writeString("Cause:     ");
    Debug::writeInt(static_cast<uint64_t>(cause));
-   Debug::writeString(" at PC: ");
+   Debug::writeString(is_interrupt ? " (Interrupt)\n" : " (Exception)\n");
+   Debug::writeString("Bad PC:    0x");
    Debug::writeInt(trap_pc);
-   Debug::writeString(" | Raw Instr/Tval: ");
+   Debug::writeString("\nVal/Tval:  0x");
    Debug::writeInt(trap_value);
-   Debug::writeString(" | Redirected to: ");
+   Debug::writeString("\nMode:      ");
+   Debug::writeString(delegate_to_s ? "Supervisor" : "Machine");
+
+   if (delegate_to_s)
+   {
+      Debug::writeString("\n[S-Mode CSRs] sepc: 0x");
+      Debug::writeInt(readCSR(0x141));
+      Debug::writeString(" | scause: 0x");
+      Debug::writeInt(readCSR(0x142));
+      Debug::writeString(" | stval: 0x");
+      Debug::writeInt(readCSR(0x143));
+      Debug::writeString(" | sstatus: 0x");
+      Debug::writeInt(readCSR(0x100));
+   }
+   else
+   {
+      Debug::writeString("\n[M-Mode CSRs] mepc: 0x");
+      Debug::writeInt(readCSR(0x341));
+      Debug::writeString(" | mcause: 0x");
+      Debug::writeInt(readCSR(0x342));
+      Debug::writeString(" | mtval: 0x");
+      Debug::writeInt(readCSR(0x343));
+      Debug::writeString(" | mstatus: 0x");
+      Debug::writeInt(readCSR(0x300));
+   }
+
+   Debug::writeString("\nJumped to: 0x");
    Debug::writeInt(program_counter);
+   Debug::writeString("\n-----------------------\n");
    DEBUG_END()
 }
 
@@ -334,21 +369,19 @@ bool Processor::translate(uint64_t vaddr, uint64_t &paddr, AccessType type)
 page_fault:
    TrapCause cause;
    if (type == AccessType::FETCH)
-      cause = TrapCause::INSTRUCTION_ACCESS_FAULT;
+      cause = TrapCause::INSTRUCTION_ACCESS_FAULT; // Or INSTRUCTION_PAGE_FAULT depending on your enum
    else if (type == AccessType::LOAD)
-      cause = TrapCause::LOAD_ACCESS_FAULT;
+      cause = TrapCause::LOAD_ACCESS_FAULT; // Or LOAD_PAGE_FAULT
    else
-      cause = TrapCause::STORE_ACCESS_FAULT;
+      cause = TrapCause::STORE_ACCESS_FAULT; // Or STORE_PAGE_FAULT
 
-   raiseTrap(cause, vaddr);
+   // Pass 'vaddr' as the third argument so mtval/stval is populated correctly!
+   raiseTrap(cause, program_counter, vaddr);
    return false;
 }
 
 void Processor::checkInterrupts()
 {
-   // 1. Tick the hardware clock (1 tick per instruction for now)
-   mtime++;
-
    // 2. Pending logic: Is the timer past the compare value?
    uint64_t mip = readCSR(0x344);
    if (mtime >= mtimecmp)
@@ -381,7 +414,13 @@ void Processor::checkInterrupts()
    // 5. If global interrupts are on, MTIE (Enable bit 7) is on, and MTIP (Pending bit 7) is on: FIRE!
    if (m_interrupts_enabled && (mie_reg & (1ULL << 7)) && (mip & (1ULL << 7)))
    {
-      raiseTrap(TrapCause::MACHINE_TIMER_INTERRUPT, program_counter);
+      raiseTrap(TrapCause::MACHINE_TIMER_INTERRUPT, program_counter, 0);
+   }
+
+   if (m_interrupts_enabled && (mie_reg & (1ULL << 3)) && (mip & (1ULL << 3)))
+   {
+      // Note: Make sure TrapCause::MACHINE_SOFTWARE_INTERRUPT exists in your enum!
+      raiseTrap(TrapCause::MACHINE_SOFTWARE_INTERRUPT, program_counter, 0);
    }
 }
 
@@ -393,7 +432,7 @@ uint64_t Processor::readCSR(uint16_t address)
       DEBUG_BEGIN()
       Debug::writeString("READCSR TOP");
       DEBUG_END()
-      raiseTrap(TrapCause::ILLEGAL_INSTRUCTION, program_counter);
+      raiseTrap(TrapCause::ILLEGAL_INSTRUCTION, program_counter, bus.readWord(program_counter));
       return 0;
    }
 
@@ -433,9 +472,9 @@ uint64_t Processor::readCSR(uint16_t address)
    case 0xF11:
       return 0; // mvendorid
    case 0xF12:
-      return 0; // marchid
+      return 0x80000000; // marchid
    case 0xF13:
-      return 0; // mimpid
+      return 0x20240501; // mimpid
    case 0xF14:
       return 0; // mhartid (Current CPU ID)
    case 0x306:
@@ -477,25 +516,19 @@ uint64_t Processor::readCSR(uint16_t address)
    case 0x10A: // senvcfg
       return senvcfg;
 
+   case 0x3A0:
+      return pmpcfg0;
+   case 0x3B0:
+      return pmpaddr0;
+
    case 0xB03 ... 0xB1F: // mhpmcounter3 to mhpmcounter31
       return 0;
    case 0x320 ... 0x33F: // mhpmevent3 to mhpmevent31
       return 0;
 
    default:
-      if (isOptionalProbe(address))
-      {
-         return 0;
-      }
-
-      DEBUG_BEGIN()
-      Debug::writeString("READCSR BOTTOM - Unimplemented CSR: ");
-      Debug::writeInt(address);
-      Debug::writeString("\n");
-      DEBUG_END()
-
       // If we get here, it's a truly unimplemented CSR.
-      raiseTrap(TrapCause::ILLEGAL_INSTRUCTION, program_counter);
+      raiseTrap(TrapCause::ILLEGAL_INSTRUCTION, program_counter, bus.readWord(program_counter));
       return 0;
    }
 }
@@ -509,18 +542,25 @@ void Processor::writeCSR(uint16_t address, uint64_t val)
       Debug::writeString("WRITECSR TOP");
       exit(0);
       DEBUG_END()
-      raiseTrap(TrapCause::ILLEGAL_INSTRUCTION, program_counter);
+      raiseTrap(TrapCause::ILLEGAL_INSTRUCTION, program_counter, bus.readWord(program_counter));
       return;
    }
 
    switch (address)
    {
    // Machine
+   case 0x3A0:
+      pmpcfg0 = val;
+      break;
+   case 0x3B0:
+      pmpaddr0 = val;
+      break;
    case 0x300:
       mstatus = val;
       break;
    case 0x301:
       // Readonly
+      DEBUG_LOG("ATTEMPTING TO WRITE TO READONLY 0x301");
       break;
    case 0x302:
       medeleg = val;
@@ -603,22 +643,11 @@ void Processor::writeCSR(uint16_t address, uint64_t val)
 
    case 0xB03 ... 0xB1F: // mhpmcounter3 to mhpmcounter31
    case 0x320 ... 0x33F: // mhpmevent3 to mhpmevent31
+      DEBUG_LOG("ATTEMPTING TO WRITE TO READONLY");
       return;
 
    default:
-      if (isOptionalProbe(address))
-      {
-         return;
-      }
-
-      // If we get here, it's a truly unimplemented CSR.
-      DEBUG_BEGIN()
-      Debug::writeString("WRITECSR BOTTOM - Unimplemented CSR: ");
-      Debug::writeInt(address);
-      Debug::writeString("\n");
-      DEBUG_END()
-
-      raiseTrap(TrapCause::ILLEGAL_INSTRUCTION, program_counter);
+      raiseTrap(TrapCause::ILLEGAL_INSTRUCTION, program_counter, bus.readWord(program_counter));
       break;
    }
 }

@@ -56,6 +56,7 @@ public:
    PrivilegeMode mode = PrivilegeMode::Machine;
    uint64_t mtime = 0;
    uint64_t mtimecmp = 0xFFFFFFFFFFFFFFFF;
+   uint32_t msip = 0;
 
    bool translate(uint64_t vaddr, uint64_t &paddr, AccessType type);
 
@@ -83,10 +84,9 @@ public:
    /**
     * Throw a trap with reason to the processor and halt execution.
     */
-   void raiseTrap(TrapCause cause, uint64_t pc);
+   void raiseTrap(TrapCause cause, uint64_t trap_pc, uint64_t trap_value);
 
    uint32_t decompress(uint16_t instr);
-   uint32_t fetchInstruction(uint64_t vaddr);
 
    void write_reg(uint8_t rd, uint64_t value);
 
@@ -102,6 +102,8 @@ public:
 
    void checkInterrupts();
 
+   uint64_t misa = 0x800000000014112D; // ISA and extensions
+
 private:
    /**
     * Initialize a processor instance
@@ -110,22 +112,24 @@ private:
 
    // CSR List
    // Machine-level CSRs
-   uint64_t mstatus = 0;               // Machine status
-   uint64_t misa = 0x800000000014112D; // ISA and extensions
-   uint64_t medeleg = 0;               // Machine exception delegation
-   uint64_t mideleg = 0;               // Machine interrupt delegation
-   uint64_t mie = 0;                   // Machine interrupt-enable
-   uint64_t mtvec = 0;                 // Machine trap-handler base address
-   uint64_t mscratch = 0;              // Scratch register for machine trap handlers
-   uint64_t mepc = 0;                  // Machine exception program counter
-   uint64_t mcause = 0;                // Machine trap cause
-   uint64_t mtval = 0;                 // Machine bad address or instruction
-   uint64_t mip = 0;                   // Machine interrupt pending
+   uint64_t mstatus = 0;  // Machine status
+   uint64_t medeleg = 0;  // Machine exception delegation
+   uint64_t mideleg = 0;  // Machine interrupt delegation
+   uint64_t mie = 0;      // Machine interrupt-enable
+   uint64_t mtvec = 0;    // Machine trap-handler base address
+   uint64_t mscratch = 0; // Scratch register for machine trap handlers
+   uint64_t mepc = 0;     // Machine exception program counter
+   uint64_t mcause = 0;   // Machine trap cause
+   uint64_t mtval = 0;    // Machine bad address or instruction
+   uint64_t mip = 0;      // Machine interrupt pending
    uint64_t mcounteren = 0;
    uint64_t scounteren = 0;
    uint64_t menvcfg = 0;
    uint64_t senvcfg = 0;
    uint64_t fcsr = 0;
+
+   uint64_t pmpcfg0 = 0;
+   uint64_t pmpaddr0 = 0;
 
    // Supervisor-level CSRs
    uint64_t sie = 0;      // Supervisor interrupt-enable
