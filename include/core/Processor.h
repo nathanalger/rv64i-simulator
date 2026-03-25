@@ -104,6 +104,8 @@ public:
 
    uint64_t misa = 0x800000000014112D; // ISA and extensions
 
+   bool checkPMP(uint64_t addr, AccessType type);
+
 private:
    /**
     * Initialize a processor instance

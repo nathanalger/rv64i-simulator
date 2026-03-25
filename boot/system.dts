@@ -21,8 +21,11 @@
             reg = <0>;
             status = "okay";
             compatible = "riscv";
-            riscv,isa = "rv64imac"; /* Assuming 64-bit integer, multiply, atomics, compressed */
-            mmu-type = "riscv,sv39"; /* Matches your page table walk! */
+            riscv,isa = "rv64imac";
+            mmu-type = "riscv,sv39";
+
+            riscv,pmp = <16>;            /* Tells OpenSBI you have 16 entries */
+            riscv,pmp-granularity = <4>; /* Minimum 4-byte alignment for PMP */
 
             cpu0_intc: interrupt-controller {
                 #interrupt-cells = <1>;

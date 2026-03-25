@@ -438,7 +438,11 @@ uint64_t Processor::readCSR(uint16_t address)
 
    switch (address)
    {
-   // Machine
+
+   case 0x100: // sstatus (old/alternate)
+   case 0x120: // sstatus (standard alias)
+      // SSTATUS_MASK should include bits like SIE, SPIE, SPP, FS, SUM, MXR
+      return mstatus & SSTATUS_MASK;
    case 0x300:
       return mstatus;
    case 0x301:
@@ -489,10 +493,6 @@ uint64_t Processor::readCSR(uint16_t address)
       return (fcsr >> 5) & 0x7; // frm
    case 0x003:
       return fcsr & 0xFF; // fcsr (flags + frm)
-
-   // Supervisor
-   case 0x100:
-      return mstatus & SSTATUS_MASK;
    case 0x104:
       return sie;
    case 0x105:
@@ -516,10 +516,18 @@ uint64_t Processor::readCSR(uint16_t address)
    case 0x10A: // senvcfg
       return senvcfg;
 
-   case 0x3A0:
-      return pmpcfg0;
-   case 0x3B0:
-      return pmpaddr0;
+   case 0x3A0 ... 0x3AF:
+   {
+      uint16_t idx = address - 0x3A0;
+      // In RV64, only even-numbered CFG CSRs are valid (0, 2, 4...)
+      if (idx % 2 == 0)
+      {
+         return pmpcfg[idx];
+      }
+      return 0; // Odd registers are reserved/illegal in RV64
+   }
+   case 0x3B0 ... 0x3EF:
+      return pmpaddr[address - 0x3B0];
 
    case 0xB03 ... 0xB1F: // mhpmcounter3 to mhpmcounter31
       return 0;
@@ -548,12 +556,9 @@ void Processor::writeCSR(uint16_t address, uint64_t val)
 
    switch (address)
    {
-   // Machine
-   case 0x3A0:
-      pmpcfg0 = val;
-      break;
-   case 0x3B0:
-      pmpaddr0 = val;
+   case 0x100:
+   case 0x120: // sstatus
+      mstatus = (mstatus & ~SSTATUS_MASK) | (val & SSTATUS_MASK);
       break;
    case 0x300:
       mstatus = val;
@@ -598,11 +603,6 @@ void Processor::writeCSR(uint16_t address, uint64_t val)
    case 0x10A:
       senvcfg = val;
       break;
-
-   // Supervisor
-   case 0x100:
-      mstatus = (mstatus & ~SSTATUS_MASK) | (val & SSTATUS_MASK);
-      break;
    case 0x104:
       sie = val;
       break;
@@ -641,6 +641,19 @@ void Processor::writeCSR(uint16_t address, uint64_t val)
       fcsr = val & 0xFF;
       break;
 
+   case 0x3A0 ... 0x3AF:
+   {
+      uint16_t idx = address - 0x3A0;
+      if (idx % 2 == 0)
+      {
+         pmpcfg[idx] = val;
+      }
+      break;
+   }
+   case 0x3B0 ... 0x3EF:
+      pmpaddr[address - 0x3B0] = val;
+      break;
+
    case 0xB03 ... 0xB1F: // mhpmcounter3 to mhpmcounter31
    case 0x320 ... 0x33F: // mhpmevent3 to mhpmevent31
       DEBUG_LOG("ATTEMPTING TO WRITE TO READONLY");
@@ -650,6 +663,50 @@ void Processor::writeCSR(uint16_t address, uint64_t val)
       raiseTrap(TrapCause::ILLEGAL_INSTRUCTION, program_counter, bus.readWord(program_counter));
       break;
    }
+}
+
+bool Processor::checkPMP(uint64_t addr, AccessType type)
+{
+   for (int i = 0; i < 64; i++)
+   {
+      // Extract the 8-bit config for this entry
+      uint8_t cfg = (pmpcfg[i / 8] >> ((i % 8) * 8)) & 0xFF;
+      uint8_t mode = (cfg >> 3) & 0x3; // A field (Address Matching)
+
+      if (mode == 0)
+         continue; // OFF
+
+      uint64_t start = 0, end = 0;
+      if (mode == 1)
+      { // TOR (Top of Range)
+         start = (i == 0) ? 0 : (pmpaddr[i - 1] << 2);
+         end = (pmpaddr[i] << 2);
+      }
+      // ... Implement NA4/NAPOT modes if needed ...
+
+      if (addr >= start && addr < end)
+      {
+         bool r = cfg & 0x1;
+         bool w = cfg & 0x2;
+         bool x = cfg & 0x4;
+         bool l = cfg & 0x8;
+
+         // If M-mode and not locked, it's allowed
+         if (this->mode == PrivilegeMode::Machine && !l)
+            return true;
+
+         if (type == AccessType::LOAD && !r)
+            return false;
+         if (type == AccessType::STORE && !w)
+            return false;
+         if (type == AccessType::FETCH && !x)
+            return false;
+
+         return true; // Match found and permitted
+      }
+   }
+   // No match: M-mode allows, S/U-mode denies
+   return (this->mode == PrivilegeMode::Machine);
 }
 
 uint32_t Processor::decompress(uint16_t c)
