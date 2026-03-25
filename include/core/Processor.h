@@ -113,36 +113,33 @@ private:
    void initialize();
 
    // CSR List
-   // Machine-level CSRs
-   uint64_t mstatus = 0;  // Machine status
-   uint64_t medeleg = 0;  // Machine exception delegation
-   uint64_t mideleg = 0;  // Machine interrupt delegation
-   uint64_t mie = 0;      // Machine interrupt-enable
-   uint64_t mtvec = 0;    // Machine trap-handler base address
-   uint64_t mscratch = 0; // Scratch register for machine trap handlers
-   uint64_t mepc = 0;     // Machine exception program counter
-   uint64_t mcause = 0;   // Machine trap cause
-   uint64_t mtval = 0;    // Machine bad address or instruction
-   uint64_t mip = 0;      // Machine interrupt pending
+   uint64_t mstatus = 0;
+   uint64_t medeleg = 0;
+   uint64_t mideleg = 0;
+   uint64_t mie = 0;
+   uint64_t mtvec = 0;
+   uint64_t mscratch = 0;
+   uint64_t mepc = 0;
+   uint64_t mcause = 0;
+   uint64_t mtval = 0;
+   uint64_t mip = 0;
    uint64_t mcounteren = 0;
    uint64_t scounteren = 0;
    uint64_t menvcfg = 0;
    uint64_t senvcfg = 0;
    uint64_t fcsr = 0;
-
    uint64_t pmpcfg0 = 0;
    uint64_t pmpaddr0 = 0;
 
    // Supervisor-level CSRs
-   uint64_t sie = 0;      // Supervisor interrupt-enable
-   uint64_t stvec = 0;    // Supervisor trap handler base address
-   uint64_t sscratch = 0; // Scratch register for supervisor trap handlers
-   uint64_t sepc = 0;     // Supervisor exception program counter
-   uint64_t scause = 0;   // Supervisor trap cause
-   uint64_t stval = 0;    // Supervisor bad address or instruction
-   uint64_t sip = 0;      // Supervisor interrupt pending
-   uint64_t satp = 0;     // Supervisor address translation and protection (MMU)
-
+   uint64_t sie = 0;
+   uint64_t stvec = 0;
+   uint64_t sscratch = 0;
+   uint64_t sepc = 0;
+   uint64_t scause = 0;
+   uint64_t stval = 0;
+   uint64_t sip = 0;
+   uint64_t satp = 0;
    uint64_t pmpcfg[16] = {0};
    uint64_t pmpaddr[64] = {0};
 };

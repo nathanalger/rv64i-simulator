@@ -13,7 +13,6 @@ void InstructionRegistry::init()
       table[i].func = nullptr;
    }
 
-   // Initialize default registry instructions first
    DefaultRegistry::init_default_instructions();
 }
 
@@ -60,16 +59,14 @@ void InstructionRegistry::register_inst(uint32_t key, MaskType type, ExecFunc fu
 
 void InstructionRegistry::register_inst(uint32_t key, uint32_t mask, ExecFunc func)
 {
-   // Hash only using the 7-bit opcode, ensuring consistency with lookup
    uint32_t index = (key & 0x7F) & (TABLE_SIZE - 1);
    uint32_t start_index = index;
 
-   // Linear probing
    while (table[index].func != nullptr)
    {
       index = (index + 1) & (TABLE_SIZE - 1);
       if (index == start_index)
-         return; // Table full
+         return;
    }
 
    table[index].key = key;

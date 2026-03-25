@@ -31,7 +31,6 @@ public:
 
    void setProcessor(Processor *p);
 
-   // Helper so the Loader and CPU know where RAM lives
    uint64_t getRamBase() const { return ram_base; }
    uint64_t getRamSize() const { return ram.getSize(); }
 };

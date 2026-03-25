@@ -32,7 +32,7 @@ InstructionType Interpreter::interpret(uint32_t instruction)
 
       break;
 
-   case 0x13: // I-Type arithmetic
+   case 0x13: // I-Type
       if (funct3 == 0)
          return InstructionType::ADDI;
       break;
@@ -83,7 +83,7 @@ InstructionType Interpreter::interpret(uint32_t instruction)
          return InstructionType::FLD;
       break;
 
-   case 0x27: // FSD (Already in your code)
+   case 0x27: // FSD
       if (funct3 == 3)
          return InstructionType::FSD;
       break;
@@ -112,7 +112,7 @@ InstructionType Interpreter::interpret(uint32_t instruction)
          case 0x001:
             return InstructionType::EBREAK;
          case 0x302:
-            return InstructionType::MRET; // Machine Return (Crucial!)
+            return InstructionType::MRET; // Machine Return
          case 0x102:
             return InstructionType::SRET; // Supervisor Return
          case 0x105:
@@ -190,8 +190,6 @@ DecodedInstruction Interpreter::decode(uint32_t raw, Processor &processor, uint8
 
    return inst;
 }
-
-// Helper Functions
 
 static InstructionFormat get_format(uint32_t opcode)
 {
@@ -284,7 +282,6 @@ static int32_t decode_j(uint32_t raw)
 
 bool Interpreter::handle(uint32_t raw, Processor &processor, uint8_t length)
 {
-   // Pass the length to the decode function
    DecodedInstruction inst = decode(raw, processor, length);
 
    if (inst.opcode == 0x0F)
@@ -324,9 +321,6 @@ bool Interpreter::handle(uint32_t raw, Processor &processor, uint8_t length)
    }
    else
    {
-      DEBUG_BEGIN()
-      Debug::writeString("INSTRUCTION LOOKUP RETURNED NULL");
-      DEBUG_END()
       processor.raiseTrap(TrapCause::ILLEGAL_INSTRUCTION, inst.pc, raw);
    }
 

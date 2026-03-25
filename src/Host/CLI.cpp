@@ -9,7 +9,7 @@ CLI parseCommandLine(int argc, char *argv[])
    {
       if (io)
          io->writeString("Usage: rv64i <binary_file> [--memory kb] [--debug]\n");
-      return config; // Invalid config
+      return config;
    }
 
    config.filename = argv[1];

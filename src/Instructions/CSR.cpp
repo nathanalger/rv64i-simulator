@@ -50,13 +50,11 @@ void exec_mret(const DecodedInstruction &, Processor &processor)
 
    processor.mode = static_cast<PrivilegeMode>(mpp);
 
-   // Restore MIE from MPIE
    if ((mstatus & MSTATUS_MPIE))
       mstatus |= MSTATUS_MIE;
    else
       mstatus &= ~MSTATUS_MIE;
 
-   // Set MPIE to 1, MPP to 0
    mstatus |= MSTATUS_MPIE;
    mstatus &= ~MSTATUS_MPP_MASK;
 

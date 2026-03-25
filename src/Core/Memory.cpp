@@ -20,7 +20,7 @@ uint8_t Memory::readByte(uint64_t address)
    {
       return memory[address];
    }
-   return 0; // Safe fallback
+   return 0;
 }
 
 uint8_t Memory::writeByte(uint64_t address, uint8_t value)

@@ -4,8 +4,6 @@
 Bus::Bus(Memory &ram_ref, IO *io_ptr, uint64_t base_address, UART *uart_ptr)
     : ram(ram_ref), io(io_ptr), ram_base(base_address), uart(uart_ptr) {}
 
-// --- READ OPERATIONS ---
-
 uint8_t Bus::readByte(uint64_t address)
 {
    if (cpu && !cpu->checkPMP(address, Processor::AccessType::LOAD))
@@ -90,8 +88,6 @@ uint64_t Bus::readDouble(uint64_t address)
    cpu->raiseTrap(TrapCause::LOAD_ACCESS_FAULT, cpu->program_counter, address);
    return 0;
 }
-
-// --- WRITE OPERATIONS ---
 
 uint8_t Bus::writeByte(uint64_t address, uint8_t value)
 {

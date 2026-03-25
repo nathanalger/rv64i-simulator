@@ -1,16 +1,16 @@
 #include "WindowsEnvironment.h"
+#include "Debug.h"
 #include <cstdlib>
 
 #ifdef _WIN32
-#include <windows.h> // For IsDebuggerPresent()
-#include <intrin.h>  // For __debugbreak()
+#include <windows.h>
+#include <intrin.h>
 #endif
 
 #include "WindowsEnvironment.h"
 #include <string>
 #include <iostream>
 
-// Mapping RISC-V Syscall numbers (Linux ABI)
 #define SYS_READ 63
 #define SYS_WRITE 64
 #define SYS_EXIT 93
@@ -18,16 +18,15 @@
 
 void WindowsEnvironment::handle_ecall(Processor &cpu)
 {
-   uint64_t syscall_num = cpu.registers[17]; // a7
-   uint64_t arg0 = cpu.registers[10];        // a0
-   uint64_t arg1 = cpu.registers[11];        // a1
-   uint64_t arg2 = cpu.registers[12];        // a2
+   uint64_t syscall_num = cpu.registers[17];
+   uint64_t arg0 = cpu.registers[10];
+   uint64_t arg1 = cpu.registers[11];
+   uint64_t arg2 = cpu.registers[12];
 
    switch (syscall_num)
    {
    case SYS_WRITE:
    {
-      // arg0 = fd (1 is stdout), arg1 = guest address of buffer, arg2 = length
       for (uint64_t i = 0; i < arg2; ++i)
       {
          char c = static_cast<char>(cpu.bus.readByte(arg1 + i));
@@ -40,7 +39,6 @@ void WindowsEnvironment::handle_ecall(Processor &cpu)
 
    case SYS_READ:
    {
-      // Basic implementation for stdin
       std::string input;
       std::getline(std::cin, input);
       uint64_t bytes_to_copy = (arg2 < input.length()) ? arg2 : input.length();
@@ -89,8 +87,9 @@ void WindowsEnvironment::handle_ecall(Processor &cpu)
 
 void WindowsEnvironment::handle_ebreak(Processor &cpu)
 {
-   if (io)
+   if (io && Debug::enabled())
    {
+
       io->writeString("[EBREAK] Breakpoint hit at PC: ");
       io->writeInt(cpu.program_counter);
       io->writeString("\n");

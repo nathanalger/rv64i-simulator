@@ -100,13 +100,9 @@ static void exec_addiw(const DecodedInstruction &inst, Processor &processor)
    if (inst.rd == 0)
       return;
 
-   // Grab the lower 32 bits
    uint32_t val32 = static_cast<uint32_t>(processor.registers[inst.rs1]);
-
-   // Add the immediate (truncating any overflow at 32 bits)
    uint32_t result32 = val32 + static_cast<uint32_t>(inst.imm);
 
-   // Cast to signed 32-bit to preserve the sign bit, then sign-extend to 64 bits
    processor.write_reg(inst.rd, static_cast<int64_t>(static_cast<int32_t>(result32)));
 }
 
@@ -132,7 +128,6 @@ static void exec_auipc(const DecodedInstruction &inst, Processor &processor)
    if (inst.rd == 0)
       return;
 
-   // Add the sign-extended immediate to the current PC
    int64_t full_imm = static_cast<int64_t>(static_cast<int32_t>(inst.imm));
    processor.write_reg(inst.rd, static_cast<int64_t>(processor.program_counter) + full_imm);
 }
@@ -143,13 +138,9 @@ static void exec_slliw(const DecodedInstruction &inst, Processor &processor)
       return;
 
    uint32_t val32 = static_cast<uint32_t>(processor.registers[inst.rs1]);
-
-   // For 32-bit shifts, the shift amount is strictly the lower 5 bits (0-31)
    uint32_t shamt = inst.imm & 0x1F;
-
    uint32_t result32 = val32 << shamt;
 
-   // Sign-extend to 64 bits
    processor.write_reg(inst.rd, static_cast<int64_t>(static_cast<int32_t>(result32)));
 }
 
@@ -158,13 +149,10 @@ static void exec_srliw(const DecodedInstruction &inst, Processor &processor)
    if (inst.rd == 0)
       return;
 
-   // Must be unsigned so C++ performs a Logical shift (zero-fills from the left)
    uint32_t val32 = static_cast<uint32_t>(processor.registers[inst.rs1]);
    uint32_t shamt = inst.imm & 0x1F;
-
    uint32_t result32 = val32 >> shamt;
 
-   // Sign-extend the resulting 32-bit value to 64 bits
    processor.write_reg(inst.rd, static_cast<int64_t>(static_cast<int32_t>(result32)));
 }
 
@@ -173,17 +161,13 @@ static void exec_sraiw(const DecodedInstruction &inst, Processor &processor)
    if (inst.rd == 0)
       return;
 
-   // Must be signed so C++ performs an Arithmetic shift (sign-extends from the left)
    int32_t val32 = static_cast<int32_t>(processor.registers[inst.rs1]);
    uint32_t shamt = inst.imm & 0x1F;
-
    int32_t result32 = val32 >> shamt;
 
-   // Cast directly to int64_t since it's already a signed 32-bit integer
    processor.write_reg(inst.rd, static_cast<int64_t>(result32));
 }
 
-// Register them in DefaultRegistry
 void DefaultRegistry::register_rv64i_arithmetic()
 {
    InstructionRegistry::register_r(0x33, 0b111, 0b0000000, exec_and);

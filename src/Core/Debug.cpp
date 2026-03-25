@@ -86,9 +86,9 @@ void Debug::end()
 
 void Debug::dump()
 {
-   if (!io)
+   if (!io || !tr)
       return;
-   io->writeString("\n*** BLACK BOX ***\n");
+   io->writeString("\n Trace Dump: \n");
    if (wrapped)
    {
       for (unsigned int i = head; i < DEBUG_HISTORY_SIZE; i++)
@@ -96,7 +96,7 @@ void Debug::dump()
    }
    for (unsigned int i = 0; i < head; i++)
       io->writeChar(history[i]);
-   io->writeString("\n*** END OF DUMP ***\n");
+   io->writeString("\n...\n");
 }
 
 bool Debug::enabled() { return debug; }

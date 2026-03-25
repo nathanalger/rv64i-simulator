@@ -39,7 +39,7 @@ void exec_div(const DecodedInstruction &inst, Processor &processor)
    {
       processor.write_reg(inst.rd, -1);
    }
-   // Use hex to represent INT64_MIN: 0x8000000000000000
+
    else if ((uint64_t)a == 0x8000000000000000ULL && b == -1)
    {
       processor.write_reg(inst.rd, a);
@@ -78,8 +78,6 @@ void exec_rem(const DecodedInstruction &inst, Processor &processor)
    }
 }
 
-// ... rest of the file remains same, but apply the hex fix if needed ...
-
 void exec_remu(const DecodedInstruction &inst, Processor &processor)
 {
    uint64_t a = processor.registers[inst.rs1];
@@ -90,7 +88,6 @@ void exec_remu(const DecodedInstruction &inst, Processor &processor)
       processor.write_reg(inst.rd, a % b);
 }
 
-// Word variants
 void exec_mulw(const DecodedInstruction &inst, Processor &processor)
 {
    int32_t res = (int32_t)processor.registers[inst.rs1] * (int32_t)processor.registers[inst.rs2];

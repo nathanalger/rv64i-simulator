@@ -1,6 +1,5 @@
 #pragma once
 
-// Forward declare Processor so we don't cause circular includes
 class Processor;
 
 class Environment

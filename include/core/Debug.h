@@ -6,7 +6,6 @@
 
 #define DEBUG_LOG(msg) Debug::log(__func__, msg)
 
-// Macros now ALWAYS execute the block so history is captured
 #define TRACE_BEGIN() \
    {                  \
       Debug::begin(__func__);
@@ -26,7 +25,6 @@ public:
    static void enable();
    static void disable();
 
-   // Core Recording
    static void recordChar(char c);
    static void recordString(const char *s);
    static void dump();
@@ -35,12 +33,10 @@ public:
       tr = true;
    };
 
-   // High-level loggers (Always record, conditionally print)
    static void log(const char *caller, const char *message);
    static void begin(const char *caller);
    static void end();
 
-   // Helpers to replace direct 'io' calls inside debug blocks
    static void writeString(const char *s);
    static void writeInt(uint64_t val);
    static void writeHex(uint64_t val);

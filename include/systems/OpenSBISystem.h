@@ -43,17 +43,5 @@ public:
       {
          io->writeString("Failed to load DTB.");
       }
-
-      uint32_t magic_number = bus.readWord(dtb_address);
-      io->writeString("\n--- DTB DIAGNOSTIC ---\n");
-      io->writeString("DTB loaded at: ");
-      io->writeInt(dtb_address);
-      io->writeString("\nFirst 4 bytes (Magic Number): ");
-      io->writeInt(magic_number);
-      io->writeString("\n----------------------\n");
-      uint32_t crash_instr = bus.readWord(0x80018BD4);
-      io->writeString("\nInstruction at 0x80018BD4: 0x");
-      io->writeInt(crash_instr);
-      io->writeString("\n");
    }
 };

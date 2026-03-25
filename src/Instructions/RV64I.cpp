@@ -7,8 +7,6 @@
 
 void exec_add(const DecodedInstruction &inst, Processor &processor)
 {
-   // add rd, rs1, rs2
-   // Adds rs1 to rs2 and stores in rd
    processor.registers[inst.rd] =
        processor.registers[inst.rs1] +
        processor.registers[inst.rs2];
@@ -25,8 +23,6 @@ void exec_add(const DecodedInstruction &inst, Processor &processor)
 
 void exec_sub(const DecodedInstruction &inst, Processor &processor)
 {
-   // sub rd,rs1,rs2
-   // Subtracts rs2 from rs1 and stores in rd
    processor.registers[inst.rd] =
        processor.registers[inst.rs1] -
        processor.registers[inst.rs2];
@@ -34,8 +30,6 @@ void exec_sub(const DecodedInstruction &inst, Processor &processor)
 
 void exec_addi(const DecodedInstruction &inst, Processor &processor)
 {
-   // addi rd,rs1,imm
-   // Adds rs1 to imm and stores in rd
    processor.registers[inst.rd] =
        processor.registers[inst.rs1] + inst.imm;
 
@@ -51,8 +45,6 @@ void exec_addi(const DecodedInstruction &inst, Processor &processor)
 
 void exec_lw(const DecodedInstruction &inst, Processor &processor)
 {
-   // lw rd,offset(rs1)
-   // Fetches a 32-bit word from memory address of rs1 + offset, stores in rd
    if (inst.rd == 0)
       return;
 
@@ -77,8 +69,6 @@ void exec_lw(const DecodedInstruction &inst, Processor &processor)
 
 void exec_sw(const DecodedInstruction &inst, Processor &processor)
 {
-   // sw rs2,offset(rs1)
-   // Stores value in rs2 at location of address in rs1 + offset.
    uint64_t address = processor.registers[inst.rs1] + inst.imm;
    uint32_t value = static_cast<uint32_t>(processor.registers[inst.rs2]);
 

@@ -1,7 +1,6 @@
 #pragma once
 #include <cstdint>
 
-// The highest bit (Bit 63) flag for asynchronous interrupts
 constexpr uint64_t INTERRUPT_BIT = (1ULL << 63);
 
 enum class TrapCause : uint64_t

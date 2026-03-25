@@ -10,5 +10,4 @@ struct CLI
    bool valid = false;
 };
 
-// Function declaration
 CLI parseCommandLine(int argc, char *argv[]);
