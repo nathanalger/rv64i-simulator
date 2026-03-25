@@ -1,5 +1,9 @@
 #include "Processor.h"
 
+/**
+ * Full disclosure, this was written entirely by AI. This is an unholy mess that I do not care
+ * to write by hand.
+ */
 uint32_t Processor::decompress(uint16_t c)
 {
    uint8_t op = c & 0x3; // Quadrant

@@ -1,45 +1,48 @@
 # RV64I Simulator
 
-A lightweight C++ simulator for the **RISC-V RV64I instruction set**.  
-This project emulates a basic 64-bit processor, including registers, memory, instruction decoding, and execution.
+A full featured RISC-V System Simulator. This emulator is capable of running small compiled RISC-V programs or full operating systems.
 
+This project simulates multiple parts of a full RISC-V computer system, such as:
+
+- Processor
+- Memory
+- Bus
+- UART and IO
+- And More
+
+In its current state, this simulator is currently OpenSBI compliant. The goal is to run linux systems in the future.
 
 ## Overview
 
-This simulator is designed to help understand how a CPU works at a low level by implementing the **fetch–decode–execute cycle** for RV64I instructions.
+This project is intended as a project to refine my skills in C++ as well as my understanding of RISC-V operations and operating systems.
 
 Core features include:
 - 32 general-purpose 64-bit registers
-- Simulated RAM
-- Instruction decoding system
-- Execution engine for core RV64I instructions
-- Debug logging support
+- Protected RAM
+- Instruction registry map for easy instruction implementation
+- Standard UART implementation
+- Standard CSR Registers with Privilege States
+- Modular environment handling
 
+## Build Variants
 
-## Architecture
+This project has two different build variants, `Host` and `Core`.
 
-The simulator is organized into a few key components:
+**Host** is meant to be a simulator run inside of an operating system that has a terminal and system functions to aid in initialization and interraction with the simulator. This uses standard io libraries to output to a console, as well as to inject code into memory on initialization. It additionally has a CLI interface for debugging and memory management. Host can be used like so:
 
-- **Processor**
-  - Holds register state and program counter
-- **Memory**
-  - Simulates RAM and supports read/write operations
-- **Interpreter / Decoder**
-  - Converts raw instructions into structured formats
-- **Instruction Execution**
-  - Executes decoded instructions like `ADD`, `SUB`, `LW`, `SW`, etc.
+```bash
+./rv64i <binary_file> [--memory kb] [--debug]
+```
 
+**Core** is a bare-bones implementation of the simulator. It is still fully featured, however it is fully independent of any standard libraries. This is intended to, at some point, be run on top of a kernel, with no fully fledged operating system, so that a RISC-V operating system could theoretically be simulated at a low level.
 
-## Getting Started
+### Separation of files
 
-To build and run the simulator, follow the setup guide:
+For any files that require stdlib provided by the OS will be stored separately. 
 
-**[Getting Started Guide](docs/getting-started.md)**
+**Header files** are separated into folders by name. In `include/core` are header files that are integral and are included in both Core and Host. 
 
-This includes:
-- Build instructions
-- Project structure overview
-- How to run your first program
+**Code files** are a bit different. When compiling core, it will include `src/Core` as well as `src/Instructions`. When compiling host, it will additionally include `src/Host`.
 
 ## Recommended IDE: VS Code
 
@@ -72,30 +75,10 @@ This explains:
 - How to implement new operations
 - Where to integrate them in the execution pipeline
 
-## Build
+## Building
 
 The build command can be found in `.vscode/tasks.json`. You will find that a build produces two different binaries.
 
-### RV64I Core
+## AI Disclosure
 
-RV64I Core is the binaries that are intended to run entirely independent of standard libraries. This will become important when executing the binaries with no operating system.
-
-### RV64I Host
-
-RV64I Host additionally includes binaries that make it executable on a machine with an operating system. It provides some standard libraries, mostly for IO. 
-
-### Separation of files
-
-For any files that require IO provided by the OS will be stored separately. 
-
-**Header files** are separated into folders by name. In `include/core` are header files that are integral and are included in both Core and Host. 
-
-**Code files** are a bit different. When compiling core, it will include `src/Core` as well as `src/Instructions`. When compiling host, it will additionally include `src/Host`.
-
-## Host Usage
-
-You can use the Host program in the command line like so:
-
-```bash
-./rv64i <binary_file> [--memory kb] [--debug]
-```
+I am a solo developer and a student, and Artificial Intelligence has been a massive help in learning specific system functions that I did not previously know were necessary. While the main RISC-V interpreter and core functions were implemented by hand, CSRs and some RISC-V C extension handling was implemented with the assistance of AI, as doing it by hand would take an insane amount of time. Using AI as a resource is invaluable and has taught me a lot about how processors and systems interract.
