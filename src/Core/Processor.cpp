@@ -682,7 +682,6 @@ bool Processor::checkPMP(uint64_t addr, AccessType type)
          start = (i == 0) ? 0 : (pmpaddr[i - 1] << 2);
          end = (pmpaddr[i] << 2);
       }
-      // ... Implement NA4/NAPOT modes if needed ...
 
       if (addr >= start && addr < end)
       {
