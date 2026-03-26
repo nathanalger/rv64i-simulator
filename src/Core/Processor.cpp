@@ -203,7 +203,7 @@ void Processor::raiseTrap(TrapCause cause, uint64_t trap_pc, uint64_t trap_value
    }
 
    DEBUG_BEGIN()
-   Debug::writeString("\nSoftware Trap Encountered <<<\n");
+   Debug::writeString("\nSoftware Trap Encountered \n");
    Debug::writeString("Cause:     ");
    Debug::writeInt(static_cast<uint64_t>(cause));
    Debug::writeString(is_interrupt ? " (Interrupt)\n" : " (Exception)\n");

@@ -1,5 +1,5 @@
 #include "Interpreter.h"
-#include "InstructionType.h"
+#include "InstructionFormat.h"
 #include "Processor.h"
 #include "InstructionRegistry.h"
 #include "Debug.h"
@@ -13,141 +13,6 @@ static int32_t decode_b(uint32_t raw);
 static int32_t decode_u(uint32_t raw);
 static int32_t decode_j(uint32_t raw);
 
-InstructionType Interpreter::interpret(uint32_t instruction)
-{
-
-   uint32_t opcode = instruction & 0x7F;
-   uint32_t funct3 = (instruction >> 12) & 0x7;
-   uint32_t funct7 = (instruction >> 25) & 0x7F;
-
-   switch (opcode)
-   {
-
-   case 0x33: // R-Type
-      if (funct3 == 0 && funct7 == 0x00)
-         return InstructionType::ADD;
-
-      if (funct3 == 0 && funct7 == 0x20)
-         return InstructionType::SUB;
-
-      break;
-
-   case 0x13: // I-Type
-      if (funct3 == 0)
-         return InstructionType::ADDI;
-      break;
-
-   case 0x03: // Loads
-      switch (funct3)
-      {
-      case 0b000:
-         return InstructionType::LB;
-      case 0b001:
-         return InstructionType::LH;
-      case 0b010:
-         return InstructionType::LW;
-      case 0b011:
-         return InstructionType::LD;
-      case 0b100:
-         return InstructionType::LBU;
-      case 0b101:
-         return InstructionType::LHU;
-      case 0b110:
-         return InstructionType::LWU;
-      }
-      break;
-
-   case 0x23: // Stores
-      if (funct3 == 2)
-         return InstructionType::SW;
-      break;
-
-   case 0x63: // Branch
-      if (funct3 == 0)
-         return InstructionType::BEQ;
-      break;
-
-   case 0x6F:
-      return InstructionType::JAL;
-
-   case 0x0F:
-   {
-      break;
-   }
-
-   case 0x53:
-      return InstructionType::OP_FP;
-
-   case 0x07:
-      if (funct3 == 3)
-         return InstructionType::FLD;
-      break;
-
-   case 0x27: // FSD
-      if (funct3 == 3)
-         return InstructionType::FSD;
-      break;
-
-   case 0x1B:
-      if (funct3 == 0)
-         return InstructionType::ADDIW;
-      if (funct3 == 1)
-         return InstructionType::SLLIW;
-      if (funct3 == 5)
-      {
-         if (funct7 == 0x20)
-            return InstructionType::SRAIW;
-         return InstructionType::SRLIW;
-      }
-      break;
-
-   case 0x73: // SYSTEM / CSR instructions
-      if (funct3 == 0)
-      {
-         uint32_t imm12 = instruction >> 20;
-         switch (imm12)
-         {
-         case 0x000:
-            return InstructionType::ECALL;
-         case 0x001:
-            return InstructionType::EBREAK;
-         case 0x302:
-            return InstructionType::MRET; // Machine Return
-         case 0x102:
-            return InstructionType::SRET; // Supervisor Return
-         case 0x105:
-            return InstructionType::WFI; // Wait for Interrupt
-         default:
-            return InstructionType::UNKNOWN;
-         }
-      }
-      else
-      {
-         // CSR Access Instructions
-         switch (funct3)
-         {
-         case 1:
-            return InstructionType::CSRRW;
-         case 2:
-            return InstructionType::CSRRS;
-         case 3:
-            return InstructionType::CSRRC;
-         case 5:
-            return InstructionType::CSRRWI;
-         case 6:
-            return InstructionType::CSRRSI;
-         case 7:
-            return InstructionType::CSRRCI;
-         default:
-            return InstructionType::UNKNOWN;
-         }
-      }
-      break;
-   }
-
-   return InstructionType::UNKNOWN;
-}
-
 DecodedInstruction Interpreter::decode(uint32_t raw, Processor &processor, uint8_t length)
 {
    DecodedInstruction inst{};
@@ -157,7 +22,6 @@ DecodedInstruction Interpreter::decode(uint32_t raw, Processor &processor, uint8
    inst.pc = processor.program_counter;
 
    inst.opcode = raw & 0x7F;
-   inst.type = interpret(raw);
 
    inst.rd = (raw >> 7) & 0x1F;
    inst.funct3 = (raw >> 12) & 0x7;
@@ -283,13 +147,6 @@ static int32_t decode_j(uint32_t raw)
 bool Interpreter::handle(uint32_t raw, Processor &processor, uint8_t length)
 {
    DecodedInstruction inst = decode(raw, processor, length);
-
-   if (inst.opcode == 0x0F)
-   {
-      processor.write_reg(0, 0);
-      return true;
-   }
-
    InstructionFormat format = get_format(inst.opcode);
 
    uint32_t lookup_funct7 = inst.funct7;
@@ -298,11 +155,13 @@ bool Interpreter::handle(uint32_t raw, Processor &processor, uint8_t length)
       bool is_shift = (inst.opcode == 0x13 || inst.opcode == 0x1B) &&
                       (inst.funct3 == 1 || inst.funct3 == 5);
 
-      if (!is_shift)
+      bool is_system = (inst.opcode == 0x73);
+
+      if (!is_shift && !is_system)
       {
          lookup_funct7 = 0;
       }
-      else
+      else if (is_shift)
       {
          lookup_funct7 &= ~0x01;
       }

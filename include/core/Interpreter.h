@@ -1,15 +1,11 @@
 #pragma once
 #include <stddef.h>
 #include <stdint.h>
-#include "InstructionType.h"
 
 class Processor;
 
 struct DecodedInstruction
 {
-   // Instruction type for execution
-   InstructionType type;
-
    // Standard instruction fields
    uint32_t opcode;
    uint32_t rd;
@@ -31,6 +27,5 @@ public:
    bool handle(uint32_t raw, Processor &processor, uint8_t length);
 
 private:
-   InstructionType interpret(uint32_t instruction);
    DecodedInstruction decode(uint32_t raw, Processor &processor, uint8_t length);
 };

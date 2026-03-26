@@ -138,6 +138,28 @@ void exec_jal(const DecodedInstruction &inst, Processor &processor)
    DEBUG_END()
 }
 
+// Pipeline
+void exec_fence(const DecodedInstruction &, Processor &)
+{
+   TRACE_BEGIN()
+   Debug::writeString("FENCE...\n");
+   DEBUG_END()
+}
+
+void exec_sfence_vma(const DecodedInstruction &, Processor &)
+{
+   TRACE_BEGIN()
+   Debug::writeString("SFENCE.VMA... \n");
+   DEBUG_END()
+}
+
+void exec_fence_i(const DecodedInstruction &, Processor &)
+{
+   TRACE_BEGIN()
+   Debug::writeString("FENCE.I");
+   DEBUG_END()
+}
+
 // Built in core extension
 void DefaultRegistry::register_rv64i()
 {
@@ -152,4 +174,8 @@ void DefaultRegistry::register_rv64i()
    InstructionRegistry::register_b(0x63, 0b000, exec_beq);
 
    InstructionRegistry::register_opcode(0x6F, exec_jal);
+
+   InstructionRegistry::register_i(0x0F, 0b000, exec_fence);
+   InstructionRegistry::register_r(0x73, 0b000, 0x09, exec_sfence_vma);
+   InstructionRegistry::register_i(0x0F, 0b001, exec_fence_i);
 }

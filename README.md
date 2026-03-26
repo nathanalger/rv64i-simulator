@@ -7,7 +7,7 @@ This project simulates multiple parts of a full RISC-V computer system, such as:
 - Processor
 - Memory
 - Bus
-- UART and IO
+- UART 
 - And More
 
 In its current state, this simulator is currently OpenSBI compliant. The goal is to run linux systems in the future.
@@ -20,9 +20,14 @@ Core features include:
 - 32 general-purpose 64-bit registers
 - Protected RAM
 - Instruction registry map for easy instruction implementation
-- Standard UART implementation
-- Standard CSR Registers with Privilege States
 - Modular environment handling
+
+Additional features
+- Standard ns16550a UART implementation
+- CLINT implementation
+- Standard CSR Registers with Privilege States
+- Sv39 memory paging system
+- Dynamic Device Tree Compilation
 
 ## Build Variants
 
