@@ -4,7 +4,7 @@
         {
             "label": "build",
             "type": "shell",
-            "command": "mingw32-make clean all",
+            "command": "mingw32-make clean setup dist\\rv64i.exe",
             "args": [],
             "group": {
                 "kind": "build",
