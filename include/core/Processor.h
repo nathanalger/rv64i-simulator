@@ -47,6 +47,7 @@ public:
 
    bool trap;
    bool trap_pending = false;
+   bool branch_taken = false;
    TrapCause trap_cause;
    uint64_t trap_pc;
 

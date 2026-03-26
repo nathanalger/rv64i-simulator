@@ -2,6 +2,7 @@
 #include "ISystem.h"
 #include "DTBBuilder.h"
 #include "Debug.h"
+#include "CLI.h"
 
 class OpenSBISystem : public ISystem
 {
@@ -13,13 +14,16 @@ public:
       return 0x80000000;
    }
 
+   uint64_t payloadLocation() const override
+   {
+      return 0x80200000;
+   }
+
    void boot(Processor &cpu, Memory &mem, Bus &bus)
    {
-      DEBUG_BEGIN()
-      Debug::writeString("Booting with ");
-      Debug::writeInt(mem.getSize());
-      Debug::writeString(" bytes of virtual memory. \n");
-      DEBUG_END()
+      io->writeString("Booting with ");
+      io->writeInt(mem.getSize());
+      io->writeString(" bytes of virtual memory. \n");
 
       cpu.program_counter = getRamBase();
 
@@ -39,7 +43,9 @@ public:
 
       cpu.registers[10] = 0;
 
-      uint64_t dtb_address = (getRamBase() + mem.getSize() - (1024 * 1024)) & ~0x7ULL;
+      uint64_t dtb_address = getRamBase() + 0x2200000;
+      io->writeString("DTB Loaded at: ");
+      io->writeString(Utility::int64_to_hex(dtb_address));
       cpu.registers[11] = dtb_address;
       cpu.registers[2] = dtb_address;
 
@@ -51,6 +57,12 @@ public:
          Debug::log(__func__, "Failed to build DTB. Buffer may be too small.\n");
          return;
       }
+
+      // Load opensbi from bin
+      uint64_t biosLoaded = loader->load(bus, getRamBase(), "bin/fw_jump.bin");
+
+      if (!biosLoaded)
+         io->writeString("No bin/fw_jump.bin file available.");
 
       for (int i = 0; i < fdt_size; i++)
       {

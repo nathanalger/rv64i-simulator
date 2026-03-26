@@ -7,16 +7,15 @@ uint64_t Processor::readCSR(uint16_t address)
    uint32_t privilege_required = (address >> 8) & 0x3;
    if (static_cast<uint32_t>(mode) < privilege_required)
    {
-      DEBUG_BEGIN()
-      Debug::writeString("READCSR TOP");
-      DEBUG_END()
+      io->writeString("Unprivileged Access Observed \n");
       raiseTrap(TrapCause::ILLEGAL_INSTRUCTION, program_counter, bus.readWord(program_counter));
       return 0;
    }
 
    switch (address)
    {
-
+   case 0x015:
+      return 0;
    case 0x100:
    case 0x120:
       return mstatus & SSTATUS_MASK;
@@ -111,6 +110,9 @@ uint64_t Processor::readCSR(uint16_t address)
       return 0;
 
    default:
+      io->writeString("Unimplemented CSR Read: ");
+      io->writeInt(address);
+      io->writeString("\n");
       raiseTrap(TrapCause::ILLEGAL_INSTRUCTION, program_counter, bus.readWord(program_counter));
       return 0;
    }
@@ -121,6 +123,7 @@ void Processor::writeCSR(uint16_t address, uint64_t val)
    uint32_t privilege_required = (address >> 8) & 0x3;
    if (static_cast<uint32_t>(mode) < privilege_required)
    {
+      io->writeString("Unprivileged Access\n");
       raiseTrap(TrapCause::ILLEGAL_INSTRUCTION, program_counter, bus.readWord(program_counter));
       return;
    }
@@ -137,10 +140,10 @@ void Processor::writeCSR(uint16_t address, uint64_t val)
    case 0x301:
       break;
    case 0x302:
-      medeleg = val;
+      medeleg = val & ~(1ULL << 11);
       break;
    case 0x303:
-      mideleg = val;
+      mideleg = val & ~((1ULL << 7) | (1ULL << 3));
       break;
    case 0x304:
       mie = val;
@@ -228,6 +231,9 @@ void Processor::writeCSR(uint16_t address, uint64_t val)
       return;
 
    default:
+      io->writeString("Unimplemented CSR Read: ");
+      io->writeInt(address);
+      io->writeString("\n");
       raiseTrap(TrapCause::ILLEGAL_INSTRUCTION, program_counter, bus.readWord(program_counter));
       break;
    }

@@ -13,6 +13,7 @@
 #include "CLI.h"
 #include "ISystem.h"
 #include "SystemDevice.h"
+#include "DefaultSystem.h"
 #include "OpenSBISystem.h"
 
 int main(int argc, char *argv[])
@@ -20,11 +21,20 @@ int main(int argc, char *argv[])
    // Module Initialization
    io = new ConsoleIO();
    env = new WindowsEnvironment();
-   sys = new OpenSBISystem();
    loader = new InjectionLoader();
 
    // CLI Reads
    CLI config = parseCommandLine(argc, argv);
+
+   if (config.systemType == SystemType::OpenSBI)
+   {
+      sys = new OpenSBISystem();
+   }
+   else
+   {
+      sys = new DefaultSystem();
+   }
+
    if (!config.valid)
       return 1;
 
@@ -38,17 +48,24 @@ int main(int argc, char *argv[])
    InstructionRegistry::init();
 
    // Fetch ram base from system
-   const uint64_t RAM_BASE = sys->getRamBase();
+   const uint64_t PAYLOAD_BASE = sys->payloadLocation();
 
    // Initialize Components
    Memory mem(config.memory_kb * 1024);
    UART *uart = new UART(io, 0x10000000);
-   Bus bus(mem, io, RAM_BASE, uart);
+   Bus bus(mem, io, sys->getRamBase(), uart);
    Processor cpu(bus);
    DEBUG_LOG("Hardware Initialized Successfully");
 
    // Load payload into memory and boot
-   loader->load(bus, RAM_BASE, config.filename);
+   uint64_t payloadLoaded = loader->load(bus, PAYLOAD_BASE, config.filename);
+   if (!payloadLoaded)
+   {
+      io->writeString("Payload file \"");
+      io->writeString(config.filename);
+      io->writeString("\" is not available or is incompatible.");
+   }
+
    sys->boot(cpu, mem, bus);
    cpu.run();
 

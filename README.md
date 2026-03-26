@@ -36,7 +36,7 @@ This project has two different build variants, `Host` and `Core`.
 **Host** is meant to be a simulator run inside of an operating system that has a terminal and system functions to aid in initialization and interaction with the simulator. This uses standard io libraries to output to a console, as well as to inject code into memory on initialization. It additionally has a CLI interface for debugging and memory management. Host can be used like so:
 
 ```bash
-./rv64i <binary_file> [--memory kb] [--debug]
+Usage: rv64i <binary_file> [--system opensbi] [--memory kb] [--debug] [--trace]
 ```
 
 **Core** is a bare-bones implementation of the simulator. It is still entirely capable of simulation, however it is independent of any standard libraries. This is intended to, at some point, be run on top of a kernel, with no true operating system, so that a RISC-V operating system could be simulated at a low level.

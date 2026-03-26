@@ -62,6 +62,11 @@ bool Processor::step()
    write_reg(0, 0);
    uint64_t physical_pc;
 
+   if (program_counter == 0x80200000)
+   {
+      io->writeString(">>> KERNEL ENTRY REACHED <<<\n");
+   }
+
    if (!translate(program_counter, physical_pc, AccessType::FETCH))
       return false;
 
@@ -178,6 +183,7 @@ void Processor::raiseTrap(TrapCause cause, uint64_t trap_pc, uint64_t trap_value
    }
    else
    {
+      mode = PrivilegeMode::Machine;
       writeCSR(0x341, trap_pc);
       writeCSR(0x342, static_cast<uint64_t>(cause));
       writeCSR(0x343, trap_value);

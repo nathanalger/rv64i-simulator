@@ -8,7 +8,7 @@ CLI parseCommandLine(int argc, char *argv[])
    if (argc < 2)
    {
       if (io)
-         io->writeString("Usage: rv64i <binary_file> [--memory kb] [--debug] [--trace]\n");
+         io->writeString("Usage: rv64i <binary_file> [--system opensbi] [--memory kb] [--debug] [--trace]\n");
       return config;
    }
 
@@ -36,8 +36,26 @@ CLI parseCommandLine(int argc, char *argv[])
             config.valid = false;
             return config;
          }
-         config.memory_kb = std::stoul(argv[i + 1]);
-         i++;
+         config.memory_kb = std::stoul(argv[++i]);
+      }
+      else if (arg == "--system")
+      {
+         if (i + 1 >= argc)
+         {
+            if (io)
+               io->writeString("Error: --system requires a value (e.g., 'opensbi')\n");
+            config.valid = false;
+            return config;
+         }
+         std::string sysVal = argv[++i];
+         if (sysVal == "opensbi" || sysVal == "sbi")
+         {
+            config.systemType = SystemType::OpenSBI;
+         }
+         else
+         {
+            config.systemType = SystemType::Default;
+         }
       }
       else
       {

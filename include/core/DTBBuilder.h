@@ -2,6 +2,8 @@
 #include <stdint.h>
 #include <libfdt.h>
 
+uint32_t phandle_intc = 1;
+
 namespace RiscVFeatures
 {
    constexpr uint64_t RV32 = (1ULL << 30);
@@ -122,6 +124,7 @@ public:
       fdt_property_cell(buf, "timebase-frequency", 10000000);
 
       fdt_begin_node(buf, "cpu@0");
+      fdt_property_cell(buf, "interrupt-controller", phandle_intc);
       fdt_property_string(buf, "device_type", "cpu");
       fdt_property_cell(buf, "reg", 0);
       fdt_property_string(buf, "status", "okay");
@@ -136,7 +139,7 @@ public:
       fdt_property_cell(buf, "#interrupt-cells", 1);
       fdt_property(buf, "interrupt-controller", 0, 0); // empty flag
       fdt_property_string(buf, "compatible", "riscv,cpu-intc");
-      uint32_t phandle_intc = 1;
+      ;
       fdt_property_cell(buf, "phandle", phandle_intc);
       fdt_property_cell(buf, "linux,phandle", phandle_intc);
       fdt_end_node(buf); // end interrupt-controller
