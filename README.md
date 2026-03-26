@@ -49,22 +49,6 @@ For any files that require stdlib provided by the OS will be stored separately.
 
 **Code files** are a bit different. When compiling core, it will include `src/Core` as well as `src/Instructions`. When compiling host, it will additionally include `src/Host`.
 
-## Recommended IDE: VS Code
-
-This project is best used with **Visual Studio Code**.
-
-The repository includes preconfigured:
-- Build tasks (`tasks.json`)
-- Project settings
-
-These are designed to make compiling and running the simulator quick and consistent without additional setup.
-
-### Why VS Code?
-
-- One-click build and run using built-in tasks
-- Consistent environment across different systems
-- Integrated terminal and debugging support
-
 ### Easy Building
 
 Simply build using `Ctrl + Shift + B`. The output file will be in `dist/`.
