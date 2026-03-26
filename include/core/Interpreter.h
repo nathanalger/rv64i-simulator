@@ -1,5 +1,6 @@
 #pragma once
-#include <cstdint>
+#include <stddef.h>
+#include <stdint.h>
 #include "InstructionType.h"
 
 class Processor;

@@ -2,7 +2,8 @@
 #include "Memory.h"
 #include "IODevice.h"
 #include "UART.h"
-#include <cstdint>
+#include <stddef.h>
+#include <stdint.h>
 
 class Processor;
 class Bus

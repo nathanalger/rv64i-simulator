@@ -3,8 +3,8 @@
 / {
     #address-cells = <2>;
     #size-cells = <2>;
-    compatible = "your-emulator,riscv-virt";
-    model = "Your Custom RISC-V Emulator";
+    compatible = "nathans-simulator,riscv-virt";
+    model = "Nathan's RISC-V Simulator";
 
     chosen {
         /* Tells OpenSBI and Linux to use this UART for terminal output */

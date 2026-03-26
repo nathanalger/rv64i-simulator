@@ -1,7 +1,7 @@
 // ILoader.h
 #pragma once
-#include <string>
-#include <cstdint>
+#include <stddef.h>
+#include <stdint.h>
 #include "Bus.h"
 
 class ILoader

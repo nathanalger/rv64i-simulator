@@ -6,7 +6,8 @@
                 "${workspaceFolder}/include/core",
                 "${workspaceFolder}/include/host",
                 "${workspaceFolder}/include/systems",
-                "${workspaceFolder}/src"
+                "${workspaceFolder}/src",
+                "${workspaceFolder}/src/lib/libfdt"
             ],
             "defines": [
                 "_DEBUG",

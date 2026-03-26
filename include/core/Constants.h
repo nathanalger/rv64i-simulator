@@ -1,5 +1,6 @@
 #pragma once
-#include <cstdint>
+#include <stddef.h>
+#include <stdint.h>
 
 constexpr uint64_t MSTATUS_MIE = (1ULL << 3);
 constexpr uint64_t MSTATUS_MPIE = (1ULL << 7);

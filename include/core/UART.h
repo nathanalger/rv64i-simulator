@@ -1,5 +1,6 @@
 #pragma once
-#include <cstdint>
+#include <stddef.h>
+#include <stdint.h>
 #include "IO.h"
 
 class UART

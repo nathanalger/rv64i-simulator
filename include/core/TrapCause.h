@@ -1,5 +1,6 @@
 #pragma once
-#include <cstdint>
+#include <stddef.h>
+#include <stdint.h>
 
 constexpr uint64_t INTERRUPT_BIT = (1ULL << 63);
 

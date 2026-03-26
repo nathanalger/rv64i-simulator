@@ -4,12 +4,8 @@
         {
             "label": "build",
             "type": "shell",
-            "command": "cmd",
-            "args": [
-                "/c",
-                "echo Compiling Host... && g++ -g -Wall -Wextra -std=c++20 -Iinclude/core -Iinclude/systems -Iinclude/host src\\Host.cpp src\\core\\*.cpp src\\host\\*.cpp src\\instructions\\*.cpp src\\Core\\Utility\\*.cpp -o dist\\rv64i.exe && echo Compiling Core... && g++ -g -Wall -Wextra -std=c++20 -Iinclude/core -Iinclude/systems src\\Core.cpp src\\core\\*.cpp src\\instructions\\*.cpp src\\Core\\Utility\\*.cpp  -o dist\\rv64i-core.exe && echo Done!"
-            ],
-            "problemMatcher": [],
+            "command": "mingw32-make",
+            "args": [],
             "group": {
                 "kind": "build",
                 "isDefault": true

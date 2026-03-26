@@ -4,7 +4,8 @@
 #include "TrapCause.h"
 #include "EnvironmentDevice.h"
 #include "Bus.h"
-#include <cstdint>
+#include <stddef.h>
+#include <stdint.h>
 
 enum class PrivilegeMode : uint8_t
 {

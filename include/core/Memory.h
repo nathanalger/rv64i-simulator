@@ -1,5 +1,6 @@
 #pragma once
-#include <cstdint>
+#include <stddef.h>
+#include <stdint.h>
 
 /**
  * Simulates memory module and controllers. Protects the memory from the simulator by utilizing getter-setter architecture.
