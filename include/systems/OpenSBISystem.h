@@ -2,7 +2,6 @@
 #include "ISystem.h"
 #include "DTBBuilder.h"
 #include "Debug.h"
-#include <fstream>
 
 class OpenSBISystem : public ISystem
 {
@@ -17,9 +16,9 @@ public:
    void boot(Processor &cpu, Memory &mem, Bus &bus)
    {
       DEBUG_BEGIN()
-      io->writeString("Booting with ");
-      io->writeInt(mem.getSize());
-      io->writeString(" bytes of virtual memory. \n");
+      Debug::writeString("Booting with ");
+      Debug::writeInt(mem.getSize());
+      Debug::writeString(" bytes of virtual memory. \n");
       DEBUG_END()
 
       cpu.program_counter = getRamBase();
@@ -49,7 +48,7 @@ public:
 
       if (fdt_size <= 0)
       {
-         io->writeString("Failed to build DTB. Buffer may be too small.\n");
+         Debug::log(__func__, "Failed to build DTB. Buffer may be too small.\n");
          return;
       }
 
@@ -59,7 +58,7 @@ public:
       }
 
       DEBUG_BEGIN()
-      io->writeString("Generated and injected DTB successfully!\n");
+      Debug::log(__func__, "Failed to build DTB. Buffer may be too small.\n");
       DEBUG_END()
    }
 };
