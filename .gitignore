@@ -3,3 +3,4 @@ dist/test.bin
 !dist/.gitkeep
 assemble/__pycache__
 assemble/instructions/__pycache__
+src/lib/libfdt/temp

@@ -8,7 +8,7 @@ CLI parseCommandLine(int argc, char *argv[])
    if (argc < 2)
    {
       if (io)
-         io->writeString("Usage: rv64i <binary_file> [--memory kb] [--debug]\n");
+         io->writeString("Usage: rv64i <binary_file> [--memory kb] [--debug] [--trace]\n");
       return config;
    }
 
@@ -22,6 +22,10 @@ CLI parseCommandLine(int argc, char *argv[])
       if (arg == "--debug")
       {
          config.debug_enabled = true;
+      }
+      else if (arg == "--trace")
+      {
+         config.trace_enabled = true;
       }
       else if (arg == "--memory")
       {

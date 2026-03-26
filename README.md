@@ -82,3 +82,6 @@ The build command can be found in `.vscode/tasks.json`. You will find that a bui
 ## AI Disclosure
 
 I am a solo developer and a student, and Artificial Intelligence has been a massive help in learning specific system functions that I did not previously know were necessary. While the main RISC-V interpreter and core functions were implemented by hand, CSRs and some RISC-V C extension handling was implemented with the assistance of AI, as doing it by hand would take an insane amount of time. Leveraging AI for these repetitive tasks allowed me to focus my efforts on system design and OpenSBI compliance.
+
+## Acknowledgments
+* **[libfdt](https://git.kernel.org/pub/scm/utils/dtc/dtc.git)**: Used for flattening and manipulating device tree data. `libfdt` is dual-licensed under the GPL and BSD licenses.

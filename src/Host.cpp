@@ -13,23 +13,21 @@
 #include "CLI.h"
 #include "ISystem.h"
 #include "OpenSBISystem.h"
-#include "DefaultSystem.h"
 
 int main(int argc, char *argv[])
 {
    io = new ConsoleIO();
    env = new WindowsEnvironment();
 
-   // Debug::enableTrace();
-
    CLI config = parseCommandLine(argc, argv);
    if (!config.valid)
       return 1;
 
    if (config.debug_enabled)
-   {
       Debug::enable();
-   }
+
+   if (config.trace_enabled)
+      Debug::enableTrace();
 
    InstructionRegistry::init();
 

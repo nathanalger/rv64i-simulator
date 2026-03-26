@@ -1,14 +1,12 @@
 #pragma once
 #include "ISystem.h"
-#include "ILoader.h"
-#include "InjectionLoader.h"
+#include "DTBBuilder.h"
+#include "Debug.h"
+#include <fstream>
 
 class OpenSBISystem : public ISystem
 {
 public:
-   /**
-    * loader should point to a dtb file.
-    */
    OpenSBISystem() {};
 
    uint64_t getRamBase() const override
@@ -21,12 +19,21 @@ public:
       DEBUG_BEGIN()
       io->writeString("Booting with ");
       io->writeInt(mem.getSize());
-      io->writeString(" bytes of virtual memory.");
+      io->writeString(" bytes of virtual memory. \n");
       DEBUG_END()
 
       cpu.program_counter = getRamBase();
 
-      cpu.misa = (2ULL << 62) | (1 << 0) | (1 << 2) | (1 << 8) | (1 << 12) | (1 << 18) | (1 << 20);
+      uint64_t uart_base = 0x10000000;
+      uint64_t clint_base = 0x02000000;
+
+      cpu.misa = RiscVFeatures::RV64 |
+                 RiscVFeatures::I | RiscVFeatures::M | RiscVFeatures::A | RiscVFeatures::C |
+                 RiscVFeatures::S | RiscVFeatures::U | RiscVFeatures::F;
+
+      char system_isa[32] = {0};
+      DTBBuilder::generate_isa_string(cpu.misa, system_isa, sizeof(system_isa));
+
       cpu.writeCSR(0x300, (3ULL << 11));
       cpu.writeCSR(0x3A0, 0x1F);
       cpu.writeCSR(0x3B0, 0xFFFFFFFFFFFFFFFFULL);
@@ -37,11 +44,22 @@ public:
       cpu.registers[11] = dtb_address;
       cpu.registers[2] = dtb_address;
 
-      uint64_t next_addr = loader->load(bus, dtb_address, "system.dtb");
+      char fdt_buf[4096] = {0};
+      int fdt_size = DTBBuilder::build(fdt_buf, sizeof(fdt_buf), getRamBase(), mem.getSize(), uart_base, clint_base, system_isa);
 
-      if (next_addr == 0)
+      if (fdt_size <= 0)
       {
-         io->writeString("Failed to load DTB.");
+         io->writeString("Failed to build DTB. Buffer may be too small.\n");
+         return;
       }
+
+      for (int i = 0; i < fdt_size; i++)
+      {
+         bus.writeByte(dtb_address + i, (uint8_t)fdt_buf[i]);
+      }
+
+      DEBUG_BEGIN()
+      io->writeString("Generated and injected DTB successfully!\n");
+      DEBUG_END()
    }
 };
