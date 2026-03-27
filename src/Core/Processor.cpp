@@ -62,11 +62,6 @@ bool Processor::step()
    write_reg(0, 0);
    uint64_t physical_pc;
 
-   if (program_counter == 0x80200000)
-   {
-      io->writeString(">>> KERNEL ENTRY REACHED <<<\n");
-   }
-
    if (!translate(program_counter, physical_pc, AccessType::FETCH))
       return false;
 
