@@ -45,10 +45,9 @@ void exec_mret(const DecodedInstruction &, Processor &processor)
       return;
    }
 
-   uint64_t mstatus = processor.readCSR(0x300);
+   uint64_t mstatus = 0;
+   processor.readCSRRaw(0x300, mstatus);
    uint64_t mpp = (mstatus & MSTATUS_MPP_MASK) >> MSTATUS_MPP_SHIFT;
-
-   processor.mode = static_cast<PrivilegeMode>(mpp);
 
    if ((mstatus & MSTATUS_MPIE))
       mstatus |= MSTATUS_MIE;
@@ -58,9 +57,13 @@ void exec_mret(const DecodedInstruction &, Processor &processor)
    mstatus |= MSTATUS_MPIE;
    mstatus &= ~MSTATUS_MPP_MASK;
 
-   processor.writeCSR(0x300, mstatus);
+   processor.writeCSRRaw(0x300, mstatus);
 
-   processor.program_counter = processor.readCSR(0x341);
+   uint64_t mepc = 0;
+   processor.readCSRRaw(0x341, mepc);
+   processor.program_counter = mepc;
+
+   processor.mode = static_cast<PrivilegeMode>(mpp);
 
    TRACE_BEGIN()
    Debug::writeString("MRET -> Switched to Mode: ");
@@ -78,10 +81,9 @@ void exec_sret(const DecodedInstruction &inst, Processor &processor)
       return;
    }
 
-   uint64_t sstatus = processor.readCSR(0x100);
+   uint64_t sstatus = 0;
+   processor.readCSRRaw(0x100, sstatus);
    uint64_t spp = (sstatus & SSTATUS_SPP_MASK) >> SSTATUS_SPP_SHIFT;
-
-   processor.mode = spp ? PrivilegeMode::Supervisor : PrivilegeMode::User;
 
    if ((sstatus & SSTATUS_SPIE))
       sstatus |= SSTATUS_SIE;
@@ -91,41 +93,63 @@ void exec_sret(const DecodedInstruction &inst, Processor &processor)
    sstatus |= SSTATUS_SPIE;
    sstatus &= ~SSTATUS_SPP_MASK;
 
-   processor.writeCSR(0x100, sstatus);
-   processor.program_counter = processor.readCSR(0x141);
+   processor.writeCSRRaw(0x100, sstatus);
+
+   uint64_t sepc = 0;
+   processor.readCSRRaw(0x141, sepc);
+   processor.program_counter = sepc;
+
+   processor.mode = spp ? PrivilegeMode::Supervisor : PrivilegeMode::User;
 }
 
 void exec_csrrw(const DecodedInstruction &inst, Processor &processor)
 {
    uint16_t csr_addr = static_cast<uint16_t>(inst.imm & 0xFFF);
    uint64_t value_to_write = processor.registers[inst.rs1];
+   uint64_t old_val = 0;
 
+   // 1. Conditionally read (only if rd != 0)
    if (inst.rd != 0)
    {
-      uint64_t old_val = processor.readCSR(csr_addr);
+      old_val = processor.readCSR(csr_addr);
       if (processor.trap_pending)
          return;
-      processor.write_reg(inst.rd, old_val);
    }
 
+   // 2. Unconditionally write
    processor.writeCSR(csr_addr, value_to_write);
+   if (processor.trap_pending)
+      return;
+
+   // 3. Commit to register file safely
+   if (inst.rd != 0)
+   {
+      processor.write_reg(inst.rd, old_val);
+   }
 }
 
 void exec_csrrs(const DecodedInstruction &inst, Processor &processor)
 {
    uint16_t csr_addr = static_cast<uint16_t>(inst.imm & 0xFFF);
    uint64_t rs1_val = processor.registers[inst.rs1];
-   uint64_t old_val = processor.readCSR(csr_addr);
 
+   // 1. Unconditionally read
+   uint64_t old_val = processor.readCSR(csr_addr);
    if (processor.trap_pending)
       return;
 
-   if (inst.rd != 0)
-      processor.write_reg(inst.rd, old_val);
-
+   // 2. Conditionally write (only if rs1 != 0)
    if (inst.rs1 != 0)
    {
       processor.writeCSR(csr_addr, old_val | rs1_val);
+      if (processor.trap_pending)
+         return;
+   }
+
+   // 3. Commit to register file safely
+   if (inst.rd != 0)
+   {
+      processor.write_reg(inst.rd, old_val);
    }
 }
 
@@ -133,53 +157,101 @@ void exec_csrrc(const DecodedInstruction &inst, Processor &processor)
 {
    uint16_t csr_addr = static_cast<uint16_t>(inst.imm & 0xFFF);
    uint64_t rs1_val = processor.registers[inst.rs1];
-   uint64_t old_val = processor.readCSR(csr_addr);
 
+   // 1. Unconditionally read
+   uint64_t old_val = processor.readCSR(csr_addr);
    if (processor.trap_pending)
       return;
 
-   if (inst.rd != 0)
-      processor.write_reg(inst.rd, old_val);
-
+   // 2. Conditionally write (only if rs1 != 0)
    if (inst.rs1 != 0)
    {
       processor.writeCSR(csr_addr, old_val & ~rs1_val);
+      if (processor.trap_pending)
+         return;
+   }
+
+   // 3. Commit to register file safely
+   if (inst.rd != 0)
+   {
+      processor.write_reg(inst.rd, old_val);
    }
 }
 
 void exec_csrrwi(const DecodedInstruction &inst, Processor &processor)
 {
    uint16_t csr_addr = static_cast<uint16_t>(inst.imm & 0xFFF);
-   uint64_t old_val = processor.readCSR(csr_addr);
-   uint64_t zimm = inst.rs1;
+   uint64_t zimm = inst.rs1; // For immediate variants, rs1 holds the zimm value
+   uint64_t old_val = 0;
 
-   processor.writeCSR(csr_addr, zimm);
+   // 1. Conditionally read (only if rd != 0)
    if (inst.rd != 0)
+   {
+      old_val = processor.readCSR(csr_addr);
+      if (processor.trap_pending)
+         return;
+   }
+
+   // 2. Unconditionally write
+   processor.writeCSR(csr_addr, zimm);
+   if (processor.trap_pending)
+      return;
+
+   // 3. Commit to register file safely
+   if (inst.rd != 0)
+   {
       processor.write_reg(inst.rd, old_val);
+   }
 }
 
 void exec_csrrsi(const DecodedInstruction &inst, Processor &processor)
 {
    uint16_t csr_addr = static_cast<uint16_t>(inst.imm & 0xFFF);
-   uint64_t old_val = processor.readCSR(csr_addr);
    uint64_t zimm = inst.rs1;
 
-   if (inst.rd != 0)
-      processor.write_reg(inst.rd, old_val);
+   // 1. Unconditionally read
+   uint64_t old_val = processor.readCSR(csr_addr);
+   if (processor.trap_pending)
+      return;
+
+   // 2. Conditionally write (only if zimm != 0)
    if (zimm != 0)
+   {
       processor.writeCSR(csr_addr, old_val | zimm);
+      if (processor.trap_pending)
+         return;
+   }
+
+   // 3. Commit to register file safely
+   if (inst.rd != 0)
+   {
+      processor.write_reg(inst.rd, old_val);
+   }
 }
 
 void exec_csrrci(const DecodedInstruction &inst, Processor &processor)
 {
    uint16_t csr_addr = static_cast<uint16_t>(inst.imm & 0xFFF);
-   uint64_t old_val = processor.readCSR(csr_addr);
    uint64_t zimm = inst.rs1;
 
-   if (inst.rd != 0)
-      processor.write_reg(inst.rd, old_val);
+   // 1. Unconditionally read
+   uint64_t old_val = processor.readCSR(csr_addr);
+   if (processor.trap_pending)
+      return;
+
+   // 2. Conditionally write (only if zimm != 0)
    if (zimm != 0)
+   {
       processor.writeCSR(csr_addr, old_val & ~zimm);
+      if (processor.trap_pending)
+         return;
+   }
+
+   // 3. Commit to register file safely
+   if (inst.rd != 0)
+   {
+      processor.write_reg(inst.rd, old_val);
+   }
 }
 
 static void exec_system_dispatch(const DecodedInstruction &inst, Processor &processor)
@@ -198,11 +270,11 @@ static void exec_system_dispatch(const DecodedInstruction &inst, Processor &proc
    case 0x302:
       exec_mret(inst, processor);
       break;
-   case 0x105:
+   case 0x105: // WFI (Wait for Interrupt)
       break;
    default:
       TRACE_BEGIN()
-      Debug::writeString("UNIMPLEMENTED CSR");
+      Debug::writeString("UNIMPLEMENTED CSR/SYSTEM INSTRUCTION");
       DEBUG_END()
       processor.raiseTrap(TrapCause::ILLEGAL_INSTRUCTION, inst.pc, processor.bus.readWord(inst.pc));
       break;

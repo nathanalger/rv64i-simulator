@@ -102,6 +102,9 @@ public:
     */
    void writeCSR(uint16_t address, uint64_t value);
 
+   bool readCSRRaw(uint16_t address, uint64_t &out_val);
+   bool writeCSRRaw(uint16_t address, uint64_t val);
+
    void checkInterrupts();
 
    uint64_t misa = 0x800000000014112D; // ISA and extensions
@@ -134,13 +137,11 @@ private:
    uint64_t pmpaddr0 = 0;
 
    // Supervisor-level CSRs
-   uint64_t sie = 0;
    uint64_t stvec = 0;
    uint64_t sscratch = 0;
    uint64_t sepc = 0;
    uint64_t scause = 0;
    uint64_t stval = 0;
-   uint64_t sip = 0;
    uint64_t satp = 0;
    uint64_t pmpcfg[16] = {0};
    uint64_t pmpaddr[64] = {0};

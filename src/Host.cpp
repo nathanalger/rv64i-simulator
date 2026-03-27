@@ -28,6 +28,8 @@ int main(int argc, char *argv[])
 
    if (config.systemType == SystemType::OpenSBI)
    {
+      if (config.memory_kb < 50000)
+         config.memory_kb = 50000;
       sys = new OpenSBISystem();
    }
    else

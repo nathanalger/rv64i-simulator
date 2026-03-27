@@ -120,9 +120,23 @@ bool Processor::step()
  */
 void Processor::run()
 {
+   uint64_t ct;
    while (!trap)
    {
+      if (ct >= 5000000)
+      {
+         ct = 0;
+         io->writeString("PC=");
+         io->writeInt(program_counter);
+         io->writeString("\n");
+
+         if (program_counter == 2147484616)
+         {
+            Debug::dump();
+         }
+      }
       step();
+      ct++;
    }
 
    if (trap_cause != TrapCause::NONE)
@@ -145,34 +159,38 @@ void Processor::raiseTrap(TrapCause cause, uint64_t trap_pc, uint64_t trap_value
 
    bool is_interrupt = (static_cast<uint64_t>(cause) & INTERRUPT_BIT) != 0;
    uint64_t exception_code = static_cast<uint64_t>(cause) & ~INTERRUPT_BIT;
-   bool delegate_to_s = false;
 
+   bool delegate_to_s = false;
    if (mode <= PrivilegeMode::Supervisor)
    {
-      if (is_interrupt)
-         delegate_to_s = (mideleg & (1ULL << exception_code)) != 0;
-      else
-         delegate_to_s = (medeleg & (1ULL << exception_code)) != 0;
+      uint64_t deleg_csr = 0;
+      readCSRRaw(is_interrupt ? 0x303 : 0x302, deleg_csr);
+      delegate_to_s = (deleg_csr & (1ULL << exception_code)) != 0;
    }
 
    if (delegate_to_s)
    {
-      writeCSR(0x141, trap_pc);
-      writeCSR(0x142, static_cast<uint64_t>(cause));
-      writeCSR(0x143, trap_value);
+      writeCSRRaw(0x141, trap_pc);
+      writeCSRRaw(0x142, static_cast<uint64_t>(cause));
+      writeCSRRaw(0x143, trap_value);
 
-      uint64_t sstatus = readCSR(0x100);
-      uint64_t sie = (sstatus & 0x2) >> 1;
+      uint64_t sstatus = 0;
+      readCSRRaw(0x100, sstatus);
+      uint64_t sie = (sstatus >> 1) & 0x1;
 
-      sstatus &= ~(0x20 | 0x2 | 0x100);
+      sstatus &= ~((1ULL << 8) | (1ULL << 5) | (1ULL << 1));
 
-      sstatus |= (sie << 5);                                                                                    // SPIE = SIE
-      sstatus |= (static_cast<uint64_t>(mode) == static_cast<uint64_t>(PrivilegeMode::User) ? 0 : (1ULL << 8)); // SPP = previous mode
+      sstatus |= (sie << 5);
+      if (mode == PrivilegeMode::Supervisor)
+      {
+         sstatus |= (1ULL << 8);
+      }
 
-      writeCSR(0x100, sstatus);
+      writeCSRRaw(0x100, sstatus);
       mode = PrivilegeMode::Supervisor;
 
-      uint64_t stvec_val = readCSR(0x105);
+      uint64_t stvec_val = 0;
+      readCSRRaw(0x105, stvec_val);
       uint64_t base_address = stvec_val & ~3ULL;
       uint64_t mode_flag = stvec_val & 3ULL;
 
@@ -183,22 +201,24 @@ void Processor::raiseTrap(TrapCause cause, uint64_t trap_pc, uint64_t trap_value
    }
    else
    {
+      writeCSRRaw(0x341, trap_pc);
+      writeCSRRaw(0x342, static_cast<uint64_t>(cause));
+      writeCSRRaw(0x343, trap_value);
+
+      uint64_t mstatus_val = 0;
+      readCSRRaw(0x300, mstatus_val);
+      uint64_t mie = (mstatus_val >> 3) & 0x1;
+
+      mstatus_val &= ~((3ULL << 11) | (1ULL << 7) | (1ULL << 3));
+
+      mstatus_val |= (mie << 7);
+      mstatus_val |= (static_cast<uint64_t>(mode) << 11);
+
+      writeCSRRaw(0x300, mstatus_val);
       mode = PrivilegeMode::Machine;
-      writeCSR(0x341, trap_pc);
-      writeCSR(0x342, static_cast<uint64_t>(cause));
-      writeCSR(0x343, trap_value);
 
-      uint64_t mstatus = readCSR(0x300);
-      uint64_t mie = (mstatus & 0x8) >> 3;
-
-      mstatus &= ~(0x80 | 0x8 | 0x1800);
-      mstatus |= (mie << 7);
-      mstatus |= (static_cast<uint64_t>(mode) << 11);
-
-      writeCSR(0x300, mstatus);
-      mode = PrivilegeMode::Machine;
-
-      uint64_t mtvec_val = readCSR(0x305);
+      uint64_t mtvec_val = 0;
+      readCSRRaw(0x305, mtvec_val);
       uint64_t base_address = mtvec_val & ~3ULL;
       uint64_t mode_flag = mtvec_val & 3ULL;
 
@@ -209,7 +229,7 @@ void Processor::raiseTrap(TrapCause cause, uint64_t trap_pc, uint64_t trap_value
    }
 
    DEBUG_BEGIN()
-   Debug::writeString("\nSoftware Trap Encountered \n");
+   Debug::writeString("\n--- Trap Encountered ---\n");
    Debug::writeString("Cause:     ");
    Debug::writeInt(static_cast<uint64_t>(cause));
    Debug::writeString(is_interrupt ? " (Interrupt)\n" : " (Exception)\n");
@@ -217,35 +237,41 @@ void Processor::raiseTrap(TrapCause cause, uint64_t trap_pc, uint64_t trap_value
    Debug::writeInt(trap_pc);
    Debug::writeString("\nVal/Tval:  0x");
    Debug::writeInt(trap_value);
-   Debug::writeString("\nMode:      ");
+   Debug::writeString("\nNew Mode:  ");
    Debug::writeString(delegate_to_s ? "Supervisor" : "Machine");
+
+   uint64_t dbg_epc = 0, dbg_cause = 0, dbg_status = 0;
 
    if (delegate_to_s)
    {
+      readCSRRaw(0x141, dbg_epc);
+      readCSRRaw(0x142, dbg_cause);
+      readCSRRaw(0x100, dbg_status);
+
       Debug::writeString("\n[S-Mode CSRs] sepc: 0x");
-      Debug::writeInt(readCSR(0x141));
+      Debug::writeInt(dbg_epc);
       Debug::writeString(" | scause: 0x");
-      Debug::writeInt(readCSR(0x142));
-      Debug::writeString(" | stval: 0x");
-      Debug::writeInt(readCSR(0x143));
+      Debug::writeInt(dbg_cause);
       Debug::writeString(" | sstatus: 0x");
-      Debug::writeInt(readCSR(0x100));
+      Debug::writeInt(dbg_status);
    }
    else
    {
+      readCSRRaw(0x341, dbg_epc);
+      readCSRRaw(0x342, dbg_cause);
+      readCSRRaw(0x300, dbg_status);
+
       Debug::writeString("\n[M-Mode CSRs] mepc: 0x");
-      Debug::writeInt(readCSR(0x341));
+      Debug::writeInt(dbg_epc);
       Debug::writeString(" | mcause: 0x");
-      Debug::writeInt(readCSR(0x342));
-      Debug::writeString(" | mtval: 0x");
-      Debug::writeInt(readCSR(0x343));
+      Debug::writeInt(dbg_cause);
       Debug::writeString(" | mstatus: 0x");
-      Debug::writeInt(readCSR(0x300));
+      Debug::writeInt(dbg_status);
    }
 
    Debug::writeString("\nJumped to: 0x");
    Debug::writeInt(program_counter);
-   Debug::writeString("\nEnd Trap Details \n");
+   Debug::writeString("\n------------------------\n");
    DEBUG_END()
 }
 
@@ -390,26 +416,52 @@ bool Processor::checkPMP(uint64_t addr, AccessType type)
    {
       uint8_t cfg = (pmpcfg[i / 8] >> ((i % 8) * 8)) & 0xFF;
       uint8_t mode = (cfg >> 3) & 0x3;
-      if (mode == 0)
+
+      if (mode == 0) // OFF
          continue;
 
-      uint64_t start = 0, end = 0;
-      if (mode == 1)
+      bool match = false;
+
+      if (mode == 1) // TOR (Top of Range)
       {
-         start = (i == 0) ? 0 : (pmpaddr[i - 1] << 2);
-         end = (pmpaddr[i] << 2);
+         uint64_t start = (i == 0) ? 0 : (pmpaddr[i - 1] << 2);
+         uint64_t end = (pmpaddr[i] << 2);
+         match = (addr >= start && addr < end);
+      }
+      else if (mode == 2) // NA4 (Naturally Aligned 4-byte)
+      {
+         uint64_t start = pmpaddr[i] << 2;
+         uint64_t end = start + 4;
+         match = (addr >= start && addr < end);
+      }
+      else if (mode == 3) // NAPOT (Naturally Aligned Power-Of-Two)
+      {
+         // Find the number of trailing 1s to determine the mask
+         uint64_t a = pmpaddr[i];
+         uint64_t mask = ~0ULL;
+         while (a & 1)
+         {
+            a >>= 1;
+            mask <<= 1;
+         }
+         mask <<= 1; // Shift one more time for the trailing 0
+
+         // Check if the address (shifted down) matches the base PMP address
+         match = (((addr >> 2) & mask) == (pmpaddr[i] & mask));
       }
 
-      if (addr >= start && addr < end)
+      if (match)
       {
          bool r = cfg & 0x1;
          bool w = cfg & 0x2;
          bool x = cfg & 0x4;
-         bool l = cfg & 0x8;
+         bool l = cfg & 0x80;
 
+         // M-mode bypasses PMP unless the Lock (L) bit is set
          if (this->mode == PrivilegeMode::Machine && !l)
             return true;
 
+         // Check permissions based on access type
          if (type == AccessType::LOAD && !r)
             return false;
          if (type == AccessType::STORE && !w)
@@ -417,9 +469,10 @@ bool Processor::checkPMP(uint64_t addr, AccessType type)
          if (type == AccessType::FETCH && !x)
             return false;
 
-         return true;
+         return true; // Access granted!
       }
    }
 
+   // If no PMP entries matched, M-mode gets access, but S/U-mode faults
    return (this->mode == PrivilegeMode::Machine);
 }
