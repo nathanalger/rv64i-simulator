@@ -115,23 +115,9 @@ bool Processor::step()
  */
 void Processor::run()
 {
-   uint64_t ct;
    while (!trap)
    {
-      if (ct >= 5000000)
-      {
-         ct = 0;
-         io->writeString("PC=");
-         io->writeInt(program_counter);
-         io->writeString("\n");
-
-         if (program_counter == 2147484616)
-         {
-            Debug::dump();
-         }
-      }
       step();
-      ct++;
    }
 
    if (trap_cause != TrapCause::NONE)
