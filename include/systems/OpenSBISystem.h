@@ -59,7 +59,7 @@ public:
       }
 
       // Load opensbi from bin
-      uint64_t biosLoaded = loader->load(bus, getRamBase(), "bin/fw_jump.bin");
+      uint64_t biosLoaded = loader->load(bus, getRamBase(), "bin/fw_jump.bin", true);
 
       if (!biosLoaded)
          io->writeString("No bin/fw_jump.bin file available.");

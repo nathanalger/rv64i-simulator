@@ -15,6 +15,7 @@ class InjectionLoader : public ILoader
 public:
    InjectionLoader() {}
    uint64_t load(Bus &bus, uint64_t start_address, const char *filename) override;
+   uint64_t load(Bus &bus, uint64_t start_address, const char *filename, bool staticPath) override;
 
 private:
    char *filename;

@@ -8,5 +8,6 @@ class ILoader
 {
 public:
    virtual uint64_t load(Bus &bus, uint64_t start_address, const char *filename) = 0;
+   virtual uint64_t load(Bus &bus, uint64_t start_address, const char *filename, bool staticPath) = 0;
    virtual ~ILoader() = default;
 };
